@@ -99,7 +99,87 @@ async function initProjectForm() {
     const form = document.getElementById('projectForm');
     const titleEl = document.getElementById('pageTitle');
 
-    // Load existing data if editing
+    // --- DOM Elements (Must be declared before loadProjectData) ---
+    const mainDropzone = document.getElementById('mainDropzone');
+    const mainInput = document.getElementById('mainImageInput');
+    const galleryDropzone = document.getElementById('galleryDropzone');
+    const galleryInput = document.getElementById('galleryInput');
+    const galleryGrid = document.getElementById('galleryGrid');
+
+    // --- GALLERY FUNCTIONS (Must be declared before loadProjectData uses them) ---
+    function renderGallery() {
+        if (!galleryGrid) return;
+        galleryGrid.innerHTML = '';
+        galleryImages.forEach((img, index) => {
+            const url = typeof img === 'string' ? img : img.optimizedUrl;
+            const div = document.createElement('div');
+            div.className = 'gallery-item-preview';
+            div.innerHTML = `
+                <img src="${getImageUrl(url)}" alt="">
+                <button type="button" class="gallery-remove" data-index="${index}">&times;</button>
+            `;
+            galleryGrid.appendChild(div);
+        });
+        document.querySelectorAll('.gallery-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.dataset.index);
+                galleryImages = galleryImages.filter((_, i) => i !== idx);
+                renderGallery();
+            });
+        });
+    }
+
+    async function handleGalleryUpload(files) {
+        if (!files.length) return;
+        document.getElementById('galleryProgress').style.display = 'flex';
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('images', files[i]);
+        }
+        try {
+            const response = await fetch(`${API_URL}/upload-multiple`, {
+                method: 'POST',
+                body: formData
+            });
+            if (!response.ok) throw new Error('Galeri yükleme hatası');
+            const results = await response.json();
+            galleryImages = [...galleryImages, ...results];
+            renderGallery();
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            document.getElementById('galleryProgress').style.display = 'none';
+        }
+    }
+
+    // Helper: Load Data for Edit (Defined before call)
+    async function loadProjectData(id) {
+        try {
+            const res = await fetch(`${API_URL}/projects/${id}`);
+            const p = await res.json();
+            document.getElementById('pTitle').value = p.title;
+            document.getElementById('pCategory').value = p.category;
+            document.getElementById('pClient').value = p.client;
+            document.getElementById('pDescription').value = p.description;
+
+            if (p.mainImage) {
+                mainImageData = p.mainImage;
+                const url = typeof p.mainImage === 'string' ? p.mainImage : p.mainImage.optimizedUrl;
+                document.getElementById('mainPreview').querySelector('img').src = getImageUrl(url);
+                document.getElementById('mainPreview').style.display = 'block';
+                document.getElementById('mainUploadPlaceholder').style.display = 'none';
+            }
+            if (p.gallery) {
+                galleryImages = p.gallery;
+                renderGallery();
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Proje verileri yüklenemedi.');
+        }
+    }
+
+    // Load existing data if editing (AFTER all functions are defined)
     if (projectId) {
         titleEl.textContent = 'Projeyi Düzenle';
         document.getElementById('saveBtn').textContent = 'Değişiklikleri Kaydet';
@@ -107,16 +187,11 @@ async function initProjectForm() {
     }
 
     // --- MAIN IMAGE UPLOAD ---
-    const mainDropzone = document.getElementById('mainDropzone');
-    const mainInput = document.getElementById('mainImageInput');
-
     setupUploadZone(mainDropzone, mainInput, async (file) => {
         document.getElementById('mainProgress').style.display = 'flex';
         try {
             const result = await uploadFile(file);
-            mainImageData = result; // Store full object
-
-            // Show preview (optimized)
+            mainImageData = result;
             const preview = document.getElementById('mainPreview');
             const placeholder = document.getElementById('mainUploadPlaceholder');
             preview.querySelector('img').src = getImageUrl(result.optimizedUrl);
@@ -138,16 +213,8 @@ async function initProjectForm() {
     });
 
     // --- GALLERY UPLOAD ---
-    const galleryDropzone = document.getElementById('galleryDropzone');
-    const galleryInput = document.getElementById('galleryInput');
-    const galleryGrid = document.getElementById('galleryGrid');
-
-    // Trigger input via dropzone click
     galleryDropzone.addEventListener('click', () => galleryInput.click());
-
     galleryInput.addEventListener('change', (e) => handleGalleryUpload(e.target.files));
-
-    // Drag & Drop for Gallery
     galleryDropzone.addEventListener('dragover', (e) => { e.preventDefault(); galleryDropzone.style.borderColor = '#d4af37'; });
     galleryDropzone.addEventListener('dragleave', (e) => { e.preventDefault(); galleryDropzone.style.borderColor = '#2a2a2a'; });
     galleryDropzone.addEventListener('drop', (e) => {
@@ -155,58 +222,6 @@ async function initProjectForm() {
         galleryDropzone.style.borderColor = '#2a2a2a';
         handleGalleryUpload(e.dataTransfer.files);
     });
-
-    async function handleGalleryUpload(files) {
-        if (!files.length) return;
-        document.getElementById('galleryProgress').style.display = 'flex';
-
-        const formData = new FormData();
-        for (let i = 0; i < files.length; i++) {
-            formData.append('images', files[i]);
-        }
-
-        try {
-            const response = await fetch(`${API_URL}/upload-multiple`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) throw new Error('Galeri yükleme hatası');
-
-            const results = await response.json();
-            galleryImages = [...galleryImages, ...results];
-            renderGallery();
-
-        } catch (error) {
-            alert(error.message);
-        } finally {
-            document.getElementById('galleryProgress').style.display = 'none';
-        }
-    }
-
-    function renderGallery() {
-        galleryGrid.innerHTML = '';
-        galleryImages.forEach((img, index) => {
-            const url = typeof img === 'string' ? img : img.optimizedUrl; // Handle legacy strings
-
-            const div = document.createElement('div');
-            div.className = 'gallery-item-preview';
-            div.innerHTML = `
-                <img src="${getImageUrl(url)}" alt="">
-                <button type="button" class="gallery-remove" data-index="${index}">&times;</button>
-            `;
-            galleryGrid.appendChild(div);
-        });
-
-        // Remove handlers
-        document.querySelectorAll('.gallery-remove').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const idx = parseInt(e.currentTarget.dataset.index);
-                galleryImages = galleryImages.filter((_, i) => i !== idx);
-                renderGallery();
-            });
-        });
-    }
 
     // --- SAVE ---
     document.getElementById('saveBtn').addEventListener('click', async () => {
@@ -225,37 +240,24 @@ async function initProjectForm() {
             return;
         }
 
-        // Prepare Data object (Compatible with server schema)
-        // If mainImageData is object, keep it. If legacy api, it might just be URL string.
-        // Server Expects: object { optimizedUrl, originalUrl } or just url string for simple setup
-        // Let's store the full object if available, or just string.
-
-        // IMPORTANT: For frontend compatibility with simple template, 
-        // we might store the optimized URL as mainImage string, 
-        // and store full objects in a separate 'media' field if we want complete structure,
-        // OR just store the object directly in mainImage field.
-        // Let's modify the frontend to handle objects.
-
         const projectData = {
             title,
             category,
             client,
             description,
-            mainImage: mainImageData, // Now an object
-            gallery: galleryImages    // Array of objects
+            mainImage: mainImageData,
+            gallery: galleryImages
         };
 
         try {
             let res;
             if (projectId) {
-                // UPDATE
                 res = await fetch(`${API_URL}/projects/${projectId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(projectData)
                 });
             } else {
-                // CREATE
                 res = await fetch(`${API_URL}/projects`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -272,38 +274,6 @@ async function initProjectForm() {
             alert(error.message);
         }
     });
-
-    // Helper: Load Data for Edit
-    async function loadProjectData(id) {
-        try {
-            const res = await fetch(`${API_URL}/projects/${id}`);
-            const p = await res.json();
-
-            document.getElementById('pTitle').value = p.title;
-            document.getElementById('pCategory').value = p.category;
-            document.getElementById('pClient').value = p.client;
-            document.getElementById('pDescription').value = p.description;
-
-            // Load Images
-            if (p.mainImage) {
-                mainImageData = p.mainImage; // Could be string or object
-                const url = typeof p.mainImage === 'string' ? p.mainImage : p.mainImage.optimizedUrl;
-
-                document.getElementById('mainPreview').querySelector('img').src = getImageUrl(url);
-                document.getElementById('mainPreview').style.display = 'block';
-                document.getElementById('mainUploadPlaceholder').style.display = 'none';
-            }
-
-            if (p.gallery) {
-                galleryImages = p.gallery;
-                renderGallery();
-            }
-
-        } catch (error) {
-            console.error(error);
-            alert('Proje verileri yüklenemedi.');
-        }
-    }
 }
 
 // --- LOGIN ---

@@ -8,7 +8,7 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     : '/api';
 
 document.addEventListener('DOMContentLoaded', async () => {
-    const projectsGrid = document.querySelector('.projects-grid');
+    const projectsGrid = document.getElementById('projectsGrid') || document.querySelector('.projects-grid');
     const filterButtons = document.querySelectorAll('.filter-btn');
     let allProjects = [];
 

@@ -143,86 +143,11 @@
                 </a>
             </div>
 
-            <!-- Projeler Slider (Marquee) -->
+            <!-- Projeler Slider (Marquee) - JS ile doldurulacak -->
             <div class="projects-slider-wrapper">
-                <div class="projects-slider">
-                    <!-- Proje 1 -->
-                    <a href="project-detail.html?id=1" class="project-card">
-                        <div class="project-image">
-                            <span class="project-category">Marka Kimliği</span>
-                            <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=400&h=300&fit=crop"
-                                alt="Proje 1">
-                        </div>
-                        <div class="project-info">
-                            <h3 class="project-title">Kurumsal Kimlik</h3>
-                            <p class="project-description">Premium marka için logo ve kurumsal kimlik tasarımı</p>
-                        </div>
-                    </a>
-
-                    <!-- Proje 2 -->
-                    <a href="project-detail.html?id=2" class="project-card">
-                        <div class="project-image">
-                            <span class="project-category">Web Tasarım</span>
-                            <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=300&fit=crop"
-                                alt="Proje 2">
-                        </div>
-                        <div class="project-info">
-                            <h3 class="project-title">E-Ticaret Sitesi</h3>
-                            <p class="project-description">Modern ve kullanıcı dostu web tasarımı</p>
-                        </div>
-                    </a>
-
-                    <!-- Proje 3 -->
-                    <a href="project-detail.html?id=3" class="project-card">
-                        <div class="project-image">
-                            <span class="project-category">Sosyal Medya</span>
-                            <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=400&h=300&fit=crop"
-                                alt="Proje 3">
-                        </div>
-                        <div class="project-info">
-                            <h3 class="project-title">Sosyal Medya</h3>
-                            <p class="project-description">Instagram için içerik ve görsel tasarım</p>
-                        </div>
-                    </a>
-
-                    <!-- Proje 4 -->
-                    <a href="project-detail.html?id=4" class="project-card">
-                        <div class="project-image">
-                            <span class="project-category">Ambalaj</span>
-                            <img src="https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=400&h=300&fit=crop"
-                                alt="Proje 4">
-                        </div>
-                        <div class="project-info">
-                            <h3 class="project-title">Ambalaj Tasarımı</h3>
-                            <p class="project-description">Ürün ambalaj ve etiket tasarımı</p>
-                        </div>
-                    </a>
-
-                    <!-- Proje 5 -->
-                    <a href="project-detail.html?id=5" class="project-card">
-                        <div class="project-image">
-                            <span class="project-category">Marka Kimliği</span>
-                            <img src="https://images.unsplash.com/photo-1542744094-3a31f272c490?w=400&h=300&fit=crop"
-                                alt="Proje 5">
-                        </div>
-                        <div class="project-info">
-                            <h3 class="project-title">Logo Tasarımı</h3>
-                            <p class="project-description">Minimal ve etkileyici logo çalışması</p>
-                        </div>
-                    </a>
-
-                    <!-- Proje 6 -->
-                    <a href="project-detail.html?id=6" class="project-card">
-                        <div class="project-image">
-                            <span class="project-category">Web Tasarım</span>
-                            <img src="https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=400&h=300&fit=crop"
-                                alt="Proje 6">
-                        </div>
-                        <div class="project-info">
-                            <h3 class="project-title">Portfolyo Sitesi</h3>
-                            <p class="project-description">Kişisel portfolyo web sitesi tasarımı</p>
-                        </div>
-                    </a>
+                <div class="projects-slider" id="homeProjectsSlider">
+                    <!-- Projeler API'den yüklenecek -->
+                    <p style="color: #888; text-align: center; width: 100%;">Projeler yükleniyor...</p>
                 </div>
             </div>
         </div>
@@ -231,6 +156,7 @@
     <!-- Three.js Kütüphanesi -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="script.js"></script>
+    <script src="home-projects.js"></script>
 </body>
 
 </html>
