@@ -1,7 +1,7 @@
 // API Base URL
-// Localhost development: http://localhost:3000/api
-// Production: /api (served by same domain or proxy)
-const API_URL = 'http://localhost:3000/api';
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3000/api'
+    : '/api';
 
 // DOM Elements
 const loginForm = document.getElementById('loginForm');
