@@ -195,6 +195,97 @@ app.post('/api/upload-multiple', upload.array('images', 10), async (req, res) =>
     }
 });
 
+// --- CONTACT FORM ROUTES ---
+
+// Contact Data File
+const CONTACT_FILE = path.join(__dirname, 'data', 'contacts.json');
+
+// Helper: Read Contacts
+const readContacts = () => {
+    if (!fs.existsSync(CONTACT_FILE)) return [];
+    const data = fs.readFileSync(CONTACT_FILE);
+    return JSON.parse(data);
+};
+
+// Helper: Write Contacts
+const writeContacts = (data) => {
+    fs.writeFileSync(CONTACT_FILE, JSON.stringify(data, null, 2));
+};
+
+// Rate limiting map (IP based)
+const rateLimitMap = new Map();
+const RATE_LIMIT_MS = 30000; // 30 saniye
+
+// Submit Contact Form
+app.post('/api/contact', (req, res) => {
+    const { name, phone, message } = req.body;
+    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+
+    // Rate limiting check
+    const lastSubmit = rateLimitMap.get(clientIP);
+    if (lastSubmit && Date.now() - lastSubmit < RATE_LIMIT_MS) {
+        const remaining = Math.ceil((RATE_LIMIT_MS - (Date.now() - lastSubmit)) / 1000);
+        return res.status(429).json({ error: `Lütfen ${remaining} saniye bekleyin.` });
+    }
+
+    // Validation
+    if (!name || !phone || !message) {
+        return res.status(400).json({ error: 'Tüm alanlar zorunludur.' });
+    }
+
+    // Save contact
+    const contacts = readContacts();
+    const newContact = {
+        id: Date.now().toString(),
+        name: name.trim(),
+        phone: phone.trim(),
+        message: message.trim(),
+        createdAt: new Date().toISOString(),
+        isRead: false
+    };
+
+    contacts.push(newContact);
+    writeContacts(contacts);
+
+    // Update rate limit
+    rateLimitMap.set(clientIP, Date.now());
+
+    res.json({ success: true, message: 'Mesajınız gönderildi.' });
+});
+
+// Get All Contacts (Admin)
+app.get('/api/contacts', (req, res) => {
+    const contacts = readContacts();
+    res.json(contacts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+});
+
+// Mark Contact as Read
+app.put('/api/contacts/:id/read', (req, res) => {
+    const contacts = readContacts();
+    const contact = contacts.find(c => c.id === req.params.id);
+    if (contact) {
+        contact.isRead = true;
+        writeContacts(contacts);
+        res.json(contact);
+    } else {
+        res.status(404).json({ error: 'İletişim bulunamadı.' });
+    }
+});
+
+// Delete Contact
+app.delete('/api/contacts/:id', (req, res) => {
+    let contacts = readContacts();
+    const initialLength = contacts.length;
+    contacts = contacts.filter(c => c.id !== req.params.id);
+
+    if (contacts.length < initialLength) {
+        writeContacts(contacts);
+        res.json({ success: true });
+    } else {
+        res.status(404).json({ error: 'İletişim bulunamadı.' });
+    }
+});
+
 // Start Server
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);

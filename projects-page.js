@@ -43,15 +43,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         let filteredProjects = allProjects;
 
         if (filter !== 'all') {
-            filteredProjects = allProjects.filter(project => {
-                const categoryMap = {
-                    'Marka Kimliği': 'branding',
-                    'Web Tasarım': 'web',
-                    'Sosyal Medya': 'social',
-                    'Ambalaj': 'packaging'
-                };
-                return categoryMap[project.category] === filter;
-            });
+            // Yeni kategoriler: Bireysel, Kurumsal, Video Klip, LifeinVader
+            filteredProjects = allProjects.filter(project => project.category === filter);
         }
 
         filteredProjects.forEach((project, index) => {
@@ -59,6 +52,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             card.href = `project-detail.html?id=${project.id}`;
             card.className = 'project-card';
             card.style.animationDelay = `${index * 0.1}s`;
+
+            // LifeinVader kategori kontrolü
+            const categoryClass = project.category === 'LifeinVader' ? 'category-lifeinvader' : '';
 
             card.innerHTML = `
                 <div class="project-image">
@@ -70,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </div>
                 <div class="project-info">
-                    <span class="project-category">${project.category}</span>
+                    <span class="project-category ${categoryClass}">${project.category}</span>
                     <h3 class="project-title">${project.title}</h3>
                 </div>
             `;

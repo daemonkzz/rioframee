@@ -8,40 +8,77 @@ const isLocalDev = window.location.hostname === 'localhost' ||
     window.location.protocol === 'file:';
 const API_URL = isLocalDev ? 'http://localhost:3000/api' : '/api';
 
+// Global değişken - tüm projeler
+let allProjects = [];
+
 document.addEventListener('DOMContentLoaded', async () => {
     const slider = document.getElementById('homeProjectsSlider');
     if (!slider) return;
 
     try {
         const response = await fetch(`${API_URL}/projects`);
-        const projects = await response.json();
+        allProjects = await response.json();
 
-        if (projects.length === 0) {
+        if (allProjects.length === 0) {
             slider.innerHTML = '<p style="color: #888; text-align: center; width: 100%;">Henüz proje eklenmedi.</p>';
             return;
         }
 
-        // Take first 6 projects
-        const displayProjects = projects.slice(0, 6);
+        // İlk yüklemede tüm projeleri göster
+        renderProjects(allProjects);
 
-        slider.innerHTML = displayProjects.map(project => `
-            <a href="project-detail.html?id=${project.id}" class="project-card">
-                <div class="project-image">
-                    <span class="project-category">${project.category}</span>
-                    <img src="${getImageUrl(project.mainImage)}" alt="${project.title}" loading="lazy">
-                </div>
-                <div class="project-info">
-                    <h3 class="project-title">${project.title}</h3>
-                    <p class="project-description">${project.description ? project.description.substring(0, 60) + '...' : ''}</p>
-                </div>
-            </a>
-        `).join('');
+        // Kategori filtrelerini başlat
+        initCategoryFilters();
 
     } catch (error) {
         console.error('Error loading home projects:', error);
         slider.innerHTML = '<p style="color: #888; text-align: center; width: 100%;">Projeler yüklenemedi.</p>';
     }
 });
+
+// Projeleri render et
+function renderProjects(projects) {
+    const slider = document.getElementById('homeProjectsSlider');
+    if (!slider) return;
+
+    const displayProjects = projects.slice(0, 6);
+
+    slider.innerHTML = displayProjects.map(project => `
+        <a href="project-detail.html?id=${project.id}" class="project-card" data-category="${project.category}">
+            <div class="project-image">
+                <span class="project-category ${project.category === 'LifeinVader' ? 'category-lifeinvader' : ''}">${project.category}</span>
+                <img src="${getImageUrl(project.mainImage)}" alt="${project.title}" loading="lazy">
+            </div>
+            <div class="project-info">
+                <h3 class="project-title">${project.title}</h3>
+                <p class="project-description">${project.description ? project.description.substring(0, 60) + '...' : ''}</p>
+            </div>
+        </a>
+    `).join('');
+}
+
+// Kategori filtrelerini başlat
+function initCategoryFilters() {
+    const filterButtons = document.querySelectorAll('.filter-btn');
+
+    filterButtons.forEach(btn => {
+        btn.addEventListener('click', function () {
+            // Aktif butonu güncelle
+            filterButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+
+            // Kategori filtreleme
+            const category = this.dataset.category;
+
+            if (category === 'all') {
+                renderProjects(allProjects);
+            } else {
+                const filtered = allProjects.filter(p => p.category === category);
+                renderProjects(filtered);
+            }
+        });
+    });
+}
 
 function getImageUrl(url) {
     if (!url) return 'https://placehold.co/400x300';

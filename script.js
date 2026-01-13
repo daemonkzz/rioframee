@@ -8,7 +8,156 @@ document.addEventListener('DOMContentLoaded', function () {
     initNavbar();
     init3DLogo();
     initFloatingFrames();
+    initScrollReveal();
 });
+
+/* ============================
+   SCROLL REVEAL ANIMATIONS
+   ============================ */
+function initScrollReveal() {
+    // Reveal edilecek tüm elementleri seç
+    const revealElements = document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale');
+
+    if (revealElements.length === 0) return;
+
+    // IntersectionObserver options
+    const observerOptions = {
+        root: null, // viewport
+        rootMargin: '0px 0px -50px 0px', // Biraz önce tetikle
+        threshold: 0.1 // %10 görünür olunca tetikle
+    };
+
+    // Observer callback
+    const revealOnScroll = (entries, observer) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+                // Bir kez gösterildikten sonra izlemeyi bırak
+                observer.unobserve(entry.target);
+            }
+        });
+    };
+
+    // Observer oluştur ve elementleri izlemeye başla
+    const observer = new IntersectionObserver(revealOnScroll, observerOptions);
+    revealElements.forEach(el => observer.observe(el));
+}
+
+/* ============================
+   PARTICLE BACKGROUND SYSTEM
+   ============================ */
+function initParticles() {
+    const canvas = document.getElementById('particleCanvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    const particleCount = 50;
+
+    // Canvas boyutlarını ayarla
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Particle sınıfı
+    class Particle {
+        constructor() {
+            this.reset();
+        }
+
+        reset() {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.size = Math.random() * 3 + 1;
+            this.speedX = (Math.random() - 0.5) * 0.5;
+            this.speedY = (Math.random() - 0.5) * 0.5;
+            this.opacity = Math.random() * 0.5 + 0.1;
+            this.fadeDirection = Math.random() > 0.5 ? 1 : -1;
+            // Gold renk tonları
+            const goldHue = 40 + Math.random() * 10; // 40-50 arası (sarı-gold)
+            this.color = `hsla(${goldHue}, 70%, 55%, ${this.opacity})`;
+        }
+
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+
+            // Opacity pulsing
+            this.opacity += this.fadeDirection * 0.005;
+            if (this.opacity >= 0.6) this.fadeDirection = -1;
+            if (this.opacity <= 0.1) this.fadeDirection = 1;
+
+            // Ekran dışına çıkarsa reset
+            if (this.x < 0 || this.x > canvas.width ||
+                this.y < 0 || this.y > canvas.height) {
+                this.reset();
+            }
+
+            // Rengi güncelle
+            const goldHue = 40 + Math.random() * 10;
+            this.color = `hsla(${goldHue}, 70%, 55%, ${this.opacity})`;
+        }
+
+        draw() {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+
+            // Glow efekti
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = 'rgba(184, 151, 90, 0.3)';
+        }
+    }
+
+    // Particle'ları oluştur
+    for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+    }
+
+    // Animasyon döngüsü
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        particles.forEach(particle => {
+            particle.update();
+            particle.draw();
+        });
+
+        // Particle'lar arası çizgiler (bağlantılar)
+        connectParticles();
+
+        requestAnimationFrame(animate);
+    }
+
+    // Yakın particle'ları birbirine bağla
+    function connectParticles() {
+        for (let i = 0; i < particles.length; i++) {
+            for (let j = i + 1; j < particles.length; j++) {
+                const dx = particles[i].x - particles[j].x;
+                const dy = particles[i].y - particles[j].y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance < 150) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(184, 151, 90, ${0.1 * (1 - distance / 150)})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.moveTo(particles[i].x, particles[i].y);
+                    ctx.lineTo(particles[j].x, particles[j].y);
+                    ctx.stroke();
+                }
+            }
+        }
+    }
+
+    animate();
+}
+
+// Particle'ları başlat
+document.addEventListener('DOMContentLoaded', initParticles);
 
 /* ============================
    FLOATING FRAMES - Random Görsel Seçimi
@@ -112,6 +261,7 @@ function initNavbar() {
     const navbar = document.querySelector('.navbar');
     const navToggle = document.querySelector('.nav-toggle');
     const navMenu = document.querySelector('.nav-menu');
+    const navLinks = document.querySelectorAll('.nav-link');
 
     // Scroll efekti
     window.addEventListener('scroll', function () {
@@ -120,20 +270,92 @@ function initNavbar() {
         } else {
             navbar.classList.remove('scrolled');
         }
+
+        // Navbar aktif durumunu section'a göre güncelle
+        updateActiveNavLink();
     });
 
     // Mobile menü toggle
-    navToggle.addEventListener('click', function () {
-        navMenu.classList.toggle('active');
-        navToggle.classList.toggle('active');
+    if (navToggle) {
+        navToggle.addEventListener('click', function () {
+            navMenu.classList.toggle('active');
+            navToggle.classList.toggle('active');
+        });
+    }
+
+    // Smooth scroll ve menü kapatma
+    navLinks.forEach(link => {
+        link.addEventListener('click', function (e) {
+            const href = this.getAttribute('href');
+
+            // Hash linkleri için smooth scroll
+            if (href.startsWith('#')) {
+                e.preventDefault();
+                const targetId = href.substring(1);
+                const targetElement = document.getElementById(targetId);
+
+                if (targetElement) {
+                    // Smooth scroll
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+
+                    // URL hash'i güncelle
+                    history.pushState(null, null, href);
+                }
+            }
+
+            // Mobil menüyü kapat
+            navMenu.classList.remove('active');
+            if (navToggle) navToggle.classList.remove('active');
+        });
     });
 
-    // Menü linklerine tıklandığında menüyü kapat
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', function () {
-            navMenu.classList.remove('active');
-            navToggle.classList.remove('active');
-        });
+    // Sayfa yüklendiğinde hash varsa smooth scroll yap
+    if (window.location.hash) {
+        setTimeout(() => {
+            const targetElement = document.getElementById(window.location.hash.substring(1));
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+            }
+        }, 100);
+    }
+}
+
+// Görünen section'a göre navbar linkini aktif yap
+function updateActiveNavLink() {
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    let currentSection = 'home';
+    const scrollPos = window.scrollY + 150; // Offset
+
+    sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.offsetHeight;
+
+        if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+            currentSection = section.getAttribute('id');
+        }
+    });
+
+    // Aktif sınıfı güncelle
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        const href = link.getAttribute('href');
+
+        // Hash linkler için
+        if (href === `#${currentSection}`) {
+            link.classList.add('active');
+        }
+        // Home için özel kontrol
+        if (currentSection === 'home' && (href === '#home' || href === '#')) {
+            link.classList.add('active');
+        }
     });
 }
 
