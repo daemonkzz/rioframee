@@ -371,6 +371,15 @@ function checkAuth() {
 
 function getImageUrl(url) {
     if (!url) return 'https://placehold.co/600x400';
-    if (url.startsWith('/uploads/')) return window.location.hostname === 'localhost' ? `http://localhost:3000${url}` : url;
+
+    // Handle Object (New format)
+    if (typeof url === 'object' && url.optimizedUrl) {
+        url = url.optimizedUrl;
+    }
+
+    if (typeof url === 'string' && url.startsWith('/uploads/')) {
+        return window.location.hostname === 'localhost' ? `http://localhost:3000${url}` : url;
+    }
+
     return url;
 }
