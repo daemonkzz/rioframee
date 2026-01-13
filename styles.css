@@ -1105,3 +1105,333 @@ img {
         font-size: 1.8rem;
     }
 }
+
+/* ============================
+   HAKKIMIZDA / HİZMETLER SECTION - PREMIUM
+   ============================ */
+.about-section {
+    padding: 140px 0;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg-primary);
+}
+
+/* Arka plan dekoratif elementler */
+.about-section::before {
+    content: '';
+    position: absolute;
+    top: 10%;
+    left: -200px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(184, 151, 90, 0.06) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.about-section::after {
+    content: '';
+    position: absolute;
+    bottom: 10%;
+    right: -200px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(184, 151, 90, 0.04) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.about-container {
+    max-width: var(--container-max);
+    margin: 0 auto;
+    padding: 0 40px;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 60px;
+    align-items: stretch;
+    /* Üst ve alt hizalama için */
+}
+
+/* Sol Taraf - İçerik */
+.about-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.about-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(184, 151, 90, 0.15), rgba(184, 151, 90, 0.05));
+    border: 1px solid rgba(184, 151, 90, 0.3);
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gold-light);
+    margin-bottom: 25px;
+    backdrop-filter: blur(10px);
+    width: fit-content;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.about-title {
+    font-size: clamp(2.2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    line-height: 1.15;
+    margin-bottom: 45px;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+}
+
+/* Services Grid - 2x3 Premium */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    flex: 1;
+}
+
+/* Service Box - Premium Style */
+.service-box {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.01));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 28px;
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Hover gradient overlay */
+.service-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(184, 151, 90, 0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    pointer-events: none;
+}
+
+.service-box:hover::before {
+    opacity: 1;
+}
+
+.service-box:hover {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    border-color: rgba(184, 151, 90, 0.4);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow:
+        0 25px 50px rgba(0, 0, 0, 0.3),
+        0 0 40px rgba(184, 151, 90, 0.1);
+}
+
+.service-icon {
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, rgba(184, 151, 90, 0.2), rgba(184, 151, 90, 0.08));
+    border: 1px solid rgba(184, 151, 90, 0.3);
+    border-radius: 14px;
+    margin-bottom: 18px;
+    color: var(--gold);
+    transition: all 0.4s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.service-box:hover .service-icon {
+    background: var(--gradient-gold);
+    border-color: transparent;
+    transform: scale(1.15) rotate(5deg);
+    box-shadow: 0 10px 30px rgba(184, 151, 90, 0.3);
+}
+
+.service-box:hover .service-icon svg {
+    stroke: var(--bg-primary);
+}
+
+.service-box h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    transition: color 0.3s ease;
+    position: relative;
+    z-index: 1;
+}
+
+.service-box:hover h3 {
+    color: var(--gold-light);
+}
+
+.service-box p {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+    position: relative;
+    z-index: 1;
+}
+
+.service-box:hover p {
+    color: var(--text-secondary);
+}
+
+/* Sağ Taraf - Görsel - Premium */
+.about-visual {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+}
+
+/* Dekoratif Oklar (Görselin Arkasında) */
+.about-arrow {
+    position: absolute;
+    width: 180px;
+    height: auto;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.9;
+    filter: drop-shadow(0 10px 30px rgba(184, 151, 90, 0.3));
+    transition: all 0.4s ease;
+}
+
+.about-arrow-left {
+    top: -40px;
+    left: -60px;
+    transform: rotate(-5deg);
+}
+
+.about-arrow-right {
+    bottom: -40px;
+    right: -60px;
+    transform: rotate(5deg);
+}
+
+/* Hover efektleri */
+.about-visual:hover .about-arrow-left {
+    transform: rotate(-8deg) translateX(-10px);
+}
+
+.about-visual:hover .about-arrow-right {
+    transform: rotate(8deg) translateX(10px);
+}
+
+.about-image-wrapper {
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 40px 80px rgba(0, 0, 0, 0.4),
+        0 0 60px rgba(184, 151, 90, 0.1);
+    z-index: 1;
+    /* Okların önünde */
+}
+
+.about-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    min-height: 100%;
+    object-fit: cover;
+    border-radius: 24px;
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.about-image-wrapper:hover img {
+    transform: scale(1.08);
+}
+
+/* Premium glow effect */
+.about-image-glow {
+    position: absolute;
+    top: -50px;
+    right: -50px;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, var(--gold-glow) 0%, transparent 70%);
+    filter: blur(50px);
+    opacity: 0.6;
+    animation: glowPulse 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Floating decoration on image */
+.about-image-wrapper::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, rgba(184, 151, 90, 0.3), transparent, rgba(184, 151, 90, 0.2));
+    border-radius: 26px;
+    z-index: -1;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.about-image-wrapper:hover::before {
+    opacity: 1;
+}
+
+/* Responsive Hakkımızda */
+@media (max-width: 1024px) {
+    .about-container {
+        grid-template-columns: 1fr;
+        gap: 60px;
+        align-items: center;
+    }
+
+    .about-visual {
+        order: -1;
+        max-height: 500px;
+    }
+
+    .about-image-wrapper {
+        height: 500px;
+    }
+}
+
+@media (max-width: 768px) {
+    .about-section {
+        padding: 80px 0;
+    }
+
+    .about-container {
+        padding: 0 20px;
+    }
+
+    .services-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .service-box {
+        padding: 24px;
+    }
+
+    .about-title {
+        font-size: 1.8rem;
+        margin-bottom: 30px;
+    }
+
+    .about-visual {
+        max-height: 350px;
+    }
+
+    .about-image-wrapper {
+        height: 350px;
+    }
+}

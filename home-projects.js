@@ -52,8 +52,84 @@ function getImageUrl(url) {
     }
 
     if (typeof url === 'string' && url.startsWith('/uploads/')) {
-        return window.location.hostname === 'localhost' ? `http://localhost:3000${url}` : url;
+        return isLocalDev ? `http://localhost:3000${url}` : url;
     }
 
     return url;
 }
+
+/* ============================
+   HERO FLOATING FRAMES - Rastgele Proje Galeri Görselleri
+   ============================ */
+async function loadHeroFrames() {
+    const heroFrames = document.getElementById('heroFrames');
+    if (!heroFrames) return;
+
+    try {
+        const response = await fetch(`${API_URL}/projects`);
+        const projects = await response.json();
+
+        // Galeri görseli olan projeleri filtrele
+        const projectsWithGallery = projects.filter(p => p.gallery && p.gallery.length > 0);
+
+        if (projectsWithGallery.length === 0) {
+            // Galeri yoksa mainImage kullan
+            const projectsWithMain = projects.filter(p => p.mainImage);
+            fillFramesWithMainImages(projectsWithMain);
+            return;
+        }
+
+        // Rastgele 4 proje seç (veya daha az varsa hepsini al)
+        const shuffledProjects = projectsWithGallery.sort(() => Math.random() - 0.5);
+        const selectedProjects = shuffledProjects.slice(0, 4);
+
+        // Her projeden rastgele 1 galeri görseli seç
+        const frameImages = heroFrames.querySelectorAll('.photo-frame img');
+
+        selectedProjects.forEach((project, index) => {
+            if (frameImages[index]) {
+                // Galeriden rastgele bir görsel seç
+                const randomGalleryImage = project.gallery[Math.floor(Math.random() * project.gallery.length)];
+                frameImages[index].src = getImageUrl(randomGalleryImage);
+                frameImages[index].alt = project.title;
+            }
+        });
+
+        // Eğer 4'ten az proje varsa, kalanları mainImage ile doldur
+        if (selectedProjects.length < 4) {
+            const remaining = projects.filter(p => p.mainImage);
+            for (let i = selectedProjects.length; i < 4 && i - selectedProjects.length < remaining.length; i++) {
+                if (frameImages[i]) {
+                    frameImages[i].src = getImageUrl(remaining[i - selectedProjects.length].mainImage);
+                    frameImages[i].alt = remaining[i - selectedProjects.length].title;
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error('Error loading hero frames:', error);
+        // Hata durumunda placeholder göster
+        const frameImages = heroFrames.querySelectorAll('.photo-frame img');
+        frameImages.forEach(img => {
+            img.src = 'https://placehold.co/200x150/1a1a1a/666666?text=Proje';
+        });
+    }
+}
+
+function fillFramesWithMainImages(projects) {
+    const heroFrames = document.getElementById('heroFrames');
+    if (!heroFrames) return;
+
+    const frameImages = heroFrames.querySelectorAll('.photo-frame img');
+    const shuffled = projects.sort(() => Math.random() - 0.5).slice(0, 4);
+
+    shuffled.forEach((project, index) => {
+        if (frameImages[index]) {
+            frameImages[index].src = getImageUrl(project.mainImage);
+            frameImages[index].alt = project.title;
+        }
+    });
+}
+
+// Sayfa yüklendiğinde hero çerçevelerini de doldur
+document.addEventListener('DOMContentLoaded', loadHeroFrames);
