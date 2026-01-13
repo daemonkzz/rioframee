@@ -185,7 +185,7 @@
     </style>
 </head>
 
-<body>
+<body class="admin-body">
     <div class="admin-container">
         <div class="contacts-container">
             <div class="page-header">
@@ -220,8 +220,17 @@
             const list = document.getElementById('contactsList');
             const unreadCount = document.getElementById('unreadCount');
 
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
             try {
-                const response = await fetch(`${API_URL}/contacts`);
+                const response = await fetch(`${API_URL}/contacts`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Yetkilendirme hatası');
                 const contacts = await response.json();
 
                 // Update unread count
