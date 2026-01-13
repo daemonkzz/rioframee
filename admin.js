@@ -3,21 +3,315 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
     ? 'http://localhost:3000/api'
     : '/api';
 
-// DOM Elements
-const loginForm = document.getElementById('loginForm');
-const logoutBtn = document.getElementById('logoutBtn');
-const projectsTableBody = document.getElementById('projectsTableBody');
-const loadingCell = document.querySelector('.loading-cell');
+// --- MAIN INIT ---
+document.addEventListener('DOMContentLoaded', () => {
+    // Page Router (Simple)
+    if (document.getElementById('projectsTableBody')) {
+        initDashboard();
+    } else if (document.getElementById('projectForm')) {
+        initProjectForm();
+    } else if (document.getElementById('loginForm')) {
+        initLogin();
+    }
+});
 
-// --- AUTHENTICATION ---
+// --- DASHBOARD (admin.html) ---
+function initDashboard() {
+    checkAuth();
+    loadProjects();
 
-// Login
-if (loginForm) {
-    loginForm.addEventListener('submit', async (e) => {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            localStorage.removeItem('adminToken');
+            window.location.href = 'admin-login.html';
+        });
+    }
+
+    // New Project Button is just a link in HTML now, no JS needed
+}
+
+async function loadProjects() {
+    const tableBody = document.getElementById('projectsTableBody');
+    const countEl = document.getElementById('totalProjects');
+
+    try {
+        const response = await fetch(`${API_URL}/projects`);
+        const projects = await response.json();
+
+        tableBody.innerHTML = '';
+        if (countEl) countEl.textContent = projects.length;
+
+        projects.forEach((project) => {
+            const row = `
+                <tr>
+                    <td><img src="${getImageUrl(project.mainImage)}" 
+                        style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px; background: #333"></td>
+                    <td>${project.title}</td>
+                    <td><span class="badge">${project.category}</span></td>
+                    <td>${project.client}</td>
+                    <td style="display:flex; gap: 0.5rem">
+                        <a href="admin-project-form.html?id=${project.id}" class="btn-icon" title="Düzenle">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                        </a>
+                        <button class="btn-icon delete-btn" data-id="${project.id}" title="Sil">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                    </td>
+                </tr>
+            `;
+            tableBody.insertAdjacentHTML('beforeend', row);
+        });
+
+        // Delete handlers
+        document.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', handleDelete);
+        });
+
+    } catch (error) {
+        console.error("Error loading projects:", error);
+        tableBody.innerHTML = '<tr><td colspan="5">Bağlantı hatası.</td></tr>';
+    }
+}
+
+async function handleDelete(e) {
+    if (!confirm('Bu projeyi silmek istediğinize emin misiniz?')) return;
+    const id = e.currentTarget.dataset.id;
+    try {
+        await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
+        loadProjects();
+    } catch (error) {
+        alert('Silme başarısız');
+    }
+}
+
+// --- PROJECT FORM (admin-project-form.html) ---
+async function initProjectForm() {
+    checkAuth();
+
+    // State
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('id');
+    let mainImageData = null; // { optimizedUrl, originalUrl }
+    let galleryImages = [];   // Array of { optimizedUrl, originalUrl }
+
+    const form = document.getElementById('projectForm');
+    const titleEl = document.getElementById('pageTitle');
+
+    // Load existing data if editing
+    if (projectId) {
+        titleEl.textContent = 'Projeyi Düzenle';
+        document.getElementById('saveBtn').textContent = 'Değişiklikleri Kaydet';
+        await loadProjectData(projectId);
+    }
+
+    // --- MAIN IMAGE UPLOAD ---
+    const mainDropzone = document.getElementById('mainDropzone');
+    const mainInput = document.getElementById('mainImageInput');
+
+    setupUploadZone(mainDropzone, mainInput, async (file) => {
+        document.getElementById('mainProgress').style.display = 'flex';
+        try {
+            const result = await uploadFile(file);
+            mainImageData = result; // Store full object
+
+            // Show preview (optimized)
+            const preview = document.getElementById('mainPreview');
+            const placeholder = document.getElementById('mainUploadPlaceholder');
+            preview.querySelector('img').src = getImageUrl(result.optimizedUrl);
+            preview.style.display = 'block';
+            placeholder.style.display = 'none';
+        } catch (e) {
+            alert('Yükleme hatası: ' + e.message);
+        } finally {
+            document.getElementById('mainProgress').style.display = 'none';
+        }
+    });
+
+    document.getElementById('removeMainBtn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        mainImageData = null;
+        document.getElementById('mainPreview').style.display = 'none';
+        document.getElementById('mainUploadPlaceholder').style.display = 'flex';
+        mainInput.value = '';
+    });
+
+    // --- GALLERY UPLOAD ---
+    const galleryDropzone = document.getElementById('galleryDropzone');
+    const galleryInput = document.getElementById('galleryInput');
+    const galleryGrid = document.getElementById('galleryGrid');
+
+    // Trigger input via dropzone click
+    galleryDropzone.addEventListener('click', () => galleryInput.click());
+
+    galleryInput.addEventListener('change', (e) => handleGalleryUpload(e.target.files));
+
+    // Drag & Drop for Gallery
+    galleryDropzone.addEventListener('dragover', (e) => { e.preventDefault(); galleryDropzone.style.borderColor = '#d4af37'; });
+    galleryDropzone.addEventListener('dragleave', (e) => { e.preventDefault(); galleryDropzone.style.borderColor = '#2a2a2a'; });
+    galleryDropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        galleryDropzone.style.borderColor = '#2a2a2a';
+        handleGalleryUpload(e.dataTransfer.files);
+    });
+
+    async function handleGalleryUpload(files) {
+        if (!files.length) return;
+        document.getElementById('galleryProgress').style.display = 'flex';
+
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('images', files[i]);
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/upload-multiple`, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Galeri yükleme hatası');
+
+            const results = await response.json();
+            galleryImages = [...galleryImages, ...results];
+            renderGallery();
+
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            document.getElementById('galleryProgress').style.display = 'none';
+        }
+    }
+
+    function renderGallery() {
+        galleryGrid.innerHTML = '';
+        galleryImages.forEach((img, index) => {
+            const url = typeof img === 'string' ? img : img.optimizedUrl; // Handle legacy strings
+
+            const div = document.createElement('div');
+            div.className = 'gallery-item-preview';
+            div.innerHTML = `
+                <img src="${getImageUrl(url)}" alt="">
+                <button type="button" class="gallery-remove" data-index="${index}">&times;</button>
+            `;
+            galleryGrid.appendChild(div);
+        });
+
+        // Remove handlers
+        document.querySelectorAll('.gallery-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const idx = parseInt(e.currentTarget.dataset.index);
+                galleryImages = galleryImages.filter((_, i) => i !== idx);
+                renderGallery();
+            });
+        });
+    }
+
+    // --- SAVE ---
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+        const title = document.getElementById('pTitle').value;
+        const category = document.getElementById('pCategory').value;
+        const client = document.getElementById('pClient').value;
+        const description = document.getElementById('pDescription').value;
+
+        if (!title || !client || !description) {
+            alert('Lütfen tüm alanları doldurun.');
+            return;
+        }
+
+        if (!mainImageData) {
+            alert('Lütfen bir kapak görseli yükleyin.');
+            return;
+        }
+
+        // Prepare Data object (Compatible with server schema)
+        // If mainImageData is object, keep it. If legacy api, it might just be URL string.
+        // Server Expects: object { optimizedUrl, originalUrl } or just url string for simple setup
+        // Let's store the full object if available, or just string.
+
+        // IMPORTANT: For frontend compatibility with simple template, 
+        // we might store the optimized URL as mainImage string, 
+        // and store full objects in a separate 'media' field if we want complete structure,
+        // OR just store the object directly in mainImage field.
+        // Let's modify the frontend to handle objects.
+
+        const projectData = {
+            title,
+            category,
+            client,
+            description,
+            mainImage: mainImageData, // Now an object
+            gallery: galleryImages    // Array of objects
+        };
+
+        try {
+            let res;
+            if (projectId) {
+                // UPDATE
+                res = await fetch(`${API_URL}/projects/${projectId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(projectData)
+                });
+            } else {
+                // CREATE
+                res = await fetch(`${API_URL}/projects`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(projectData)
+                });
+            }
+
+            if (res.ok) {
+                window.location.href = 'admin.html';
+            } else {
+                throw new Error('Kayıt başarısız');
+            }
+        } catch (error) {
+            alert(error.message);
+        }
+    });
+
+    // Helper: Load Data for Edit
+    async function loadProjectData(id) {
+        try {
+            const res = await fetch(`${API_URL}/projects/${id}`);
+            const p = await res.json();
+
+            document.getElementById('pTitle').value = p.title;
+            document.getElementById('pCategory').value = p.category;
+            document.getElementById('pClient').value = p.client;
+            document.getElementById('pDescription').value = p.description;
+
+            // Load Images
+            if (p.mainImage) {
+                mainImageData = p.mainImage; // Could be string or object
+                const url = typeof p.mainImage === 'string' ? p.mainImage : p.mainImage.optimizedUrl;
+
+                document.getElementById('mainPreview').querySelector('img').src = getImageUrl(url);
+                document.getElementById('mainPreview').style.display = 'block';
+                document.getElementById('mainUploadPlaceholder').style.display = 'none';
+            }
+
+            if (p.gallery) {
+                galleryImages = p.gallery;
+                renderGallery();
+            }
+
+        } catch (error) {
+            console.error(error);
+            alert('Proje verileri yüklenemedi.');
+        }
+    }
+}
+
+// --- LOGIN ---
+function initLogin() {
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const errorMsg = document.getElementById('loginError');
 
         try {
             const response = await fetch(`${API_URL}/login`, {
@@ -32,261 +326,51 @@ if (loginForm) {
                 localStorage.setItem('adminToken', data.token);
                 window.location.href = 'admin.html';
             } else {
-                throw new Error(data.message);
+                document.getElementById('loginError').style.display = 'block';
             }
         } catch (error) {
             console.error(error);
-            errorMsg.style.display = 'block';
-            errorMsg.textContent = 'Giriş başarısız: ' + error.message;
         }
     });
 }
 
-// Auth State Check & Logout
-const checkAuth = () => {
-    const token = localStorage.getItem('adminToken');
-    const isLoginPage = window.location.pathname.includes('admin-login.html');
+// --- UTILS ---
+function setupUploadZone(zone, input, callback) {
+    zone.addEventListener('click', () => input.click());
+    input.addEventListener('change', (e) => {
+        if (e.target.files[0]) callback(e.target.files[0]);
+    });
 
-    if (token) {
-        if (isLoginPage) window.location.href = 'admin.html';
-        if (!isLoginPage) loadProjects();
-    } else {
-        if (!isLoginPage) window.location.href = 'admin-login.html';
-    }
-};
-
-// Run check on load
-checkAuth();
-
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', (e) => {
+    zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = '#d4af37'; });
+    zone.addEventListener('dragleave', (e) => { e.preventDefault(); zone.style.borderColor = '#2a2a2a'; });
+    zone.addEventListener('drop', (e) => {
         e.preventDefault();
-        localStorage.removeItem('adminToken');
-        window.location.href = 'admin-login.html';
+        zone.style.borderColor = '#2a2a2a';
+        if (e.dataTransfer.files[0]) callback(e.dataTransfer.files[0]);
     });
 }
 
-// --- PROJECTS MANAGEMENT ---
+async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append('image', file);
 
-async function loadProjects() {
-    if (!projectsTableBody) return;
+    const res = await fetch(`${API_URL}/upload`, {
+        method: 'POST',
+        body: formData
+    });
 
-    try {
-        const response = await fetch(`${API_URL}/projects`);
-        const projects = await response.json();
+    if (!res.ok) throw new Error('Upload failed');
+    return await res.json(); // Returns { optimizedUrl, originalUrl }
+}
 
-        projectsTableBody.innerHTML = '';
-
-        let count = 0;
-        projects.forEach((project) => {
-            count++;
-            const row = `
-                <tr>
-                    <td><img src="${getImageUrl(project.mainImage)}" alt="${project.title}" style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px;"></td>
-                    <td>${project.title}</td>
-                    <td><span class="badge">${project.category}</span></td>
-                    <td>${project.client}</td>
-                    <td>
-                        <button class="btn-icon delete-btn" data-id="${project.id}">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
-                    </td>
-                </tr>
-            `;
-            projectsTableBody.insertAdjacentHTML('beforeend', row);
-        });
-
-        document.getElementById('totalProjects').textContent = count;
-
-        // Delete handlers
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.addEventListener('click', handleDelete);
-        });
-
-    } catch (error) {
-        console.error("Error loading projects:", error);
-        projectsTableBody.innerHTML = '<tr><td colspan="5">Veriler yüklenirken hata oluştu. Lütfen serverın çalıştığından emin olun.</td></tr>';
+function checkAuth() {
+    if (!localStorage.getItem('adminToken')) {
+        window.location.href = 'admin-login.html';
     }
 }
 
 function getImageUrl(url) {
     if (!url) return 'https://placehold.co/600x400';
-    // If it's a relative path from our server, prepend localhost for now
-    if (url.startsWith('/uploads/')) {
-        return `http://localhost:3000${url}`;
-    }
+    if (url.startsWith('/uploads/')) return window.location.hostname === 'localhost' ? `http://localhost:3000${url}` : url;
     return url;
-}
-
-// --- NEW PROJECT MODAL & FORM ---
-
-const modal = document.getElementById('projectModal');
-const newProjectBtn = document.getElementById('newProjectBtn');
-const closeModal = document.getElementById('closeModal');
-const cancelBtn = document.getElementById('cancelBtn');
-const projectForm = document.getElementById('projectForm');
-const fileInput = document.getElementById('pMainImage');
-const dropzone = document.getElementById('mainImageDropzone');
-const previewImg = document.getElementById('mainImagePreview');
-const previewContainer = document.querySelector('.preview-container');
-const uploadPlaceholder = document.querySelector('.upload-placeholder');
-const removeImgBtn = document.querySelector('.remove-image');
-
-// Modal Logic
-if (newProjectBtn) {
-    newProjectBtn.addEventListener('click', () => {
-        modal.classList.add('active');
-    });
-
-    [closeModal, cancelBtn].forEach(btn => {
-        btn.addEventListener('click', () => {
-            modal.classList.remove('active');
-            projectForm.reset();
-            resetImagePreview();
-        });
-    });
-}
-
-// Image Upload Logic
-if (dropzone) {
-    dropzone.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', handleFileSelect);
-
-    // Drag & Drop
-    dropzone.addEventListener('dragover', (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = 'var(--admin-primary)';
-    });
-
-    dropzone.addEventListener('dragleave', (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = 'var(--admin-border)';
-    });
-
-    dropzone.addEventListener('drop', (e) => {
-        e.preventDefault();
-        dropzone.style.borderColor = 'var(--admin-border)';
-        const file = e.dataTransfer.files[0];
-        if (file && file.type.startsWith('image/')) {
-            handleFile(file);
-        }
-    });
-
-    removeImgBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        resetImagePreview();
-    });
-}
-
-function handleFileSelect(e) {
-    const file = e.target.files[0];
-    if (file) handleFile(file);
-}
-
-function handleFile(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        previewImg.src = e.target.result;
-        previewContainer.style.display = 'block';
-        uploadPlaceholder.style.display = 'none';
-
-        // Temporarily store file in input for submission
-        // But since we can't programmatically set files list easily, we rely on the input's state if user clicked
-        // If dropped, we might need a custom handling. For simplicity, assume click upload mostly.
-    };
-    reader.readAsDataURL(file);
-}
-
-function resetImagePreview() {
-    fileInput.value = '';
-    previewContainer.style.display = 'none';
-    uploadPlaceholder.style.display = 'flex';
-    previewImg.src = '';
-}
-
-// Save Project
-if (projectForm) {
-    projectForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const saveBtn = document.getElementById('saveProjectBtn');
-        saveBtn.disabled = true;
-        saveBtn.textContent = 'Kaydediliyor...';
-
-        try {
-            const title = document.getElementById('pTitle').value;
-            const category = document.getElementById('pCategory').value;
-            const client = document.getElementById('pClient').value;
-            const description = document.getElementById('pDescription').value;
-            const file = fileInput.files[0];
-
-            let imageUrl = 'https://placehold.co/600x400';
-
-            // 1. Upload Image First
-            if (file) {
-                const formData = new FormData();
-                formData.append('image', file);
-
-                const uploadRes = await fetch(`${API_URL}/upload`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (uploadRes.ok) {
-                    const uploadData = await uploadRes.json();
-                    imageUrl = uploadData.url;
-                } else {
-                    throw new Error('Görsel yüklenemedi');
-                }
-            }
-
-            // 2. Save Project Data
-            const projectData = {
-                title,
-                category,
-                client,
-                description,
-                mainImage: imageUrl,
-                gallery: [imageUrl] // Demo
-            };
-
-            const response = await fetch(`${API_URL}/projects`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(projectData)
-            });
-
-            if (!response.ok) throw new Error('Kayıt başarısız');
-
-            // Success
-            modal.classList.remove('active');
-            projectForm.reset();
-            resetImagePreview();
-            loadProjects();
-            alert('Proje başarıyla eklendi!');
-
-        } catch (error) {
-            console.error("Error saving project:", error);
-            alert('Hata: ' + error.message);
-        } finally {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Kaydet';
-        }
-    });
-}
-
-// Delete Project
-async function handleDelete(e) {
-    if (!confirm('Bu projeyi silmek istediğinize emin misiniz?')) return;
-
-    const btn = e.currentTarget;
-    const id = btn.dataset.id;
-
-    try {
-        await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
-        loadProjects(); // Refresh
-    } catch (error) {
-        console.error("Error deleting:", error);
-        alert('Silme işlemi başarısız.');
-    }
 }

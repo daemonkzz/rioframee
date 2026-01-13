@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proje Yönetimi | RioFrame Admin</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body class="admin-body">
+
+    <div class="admin-container">
+        <!-- Header -->
+        <header class="form-header">
+            <div class="header-left">
+                <a href="admin.html" class="back-link">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    Panale Dön
+                </a>
+                <h1 id="pageTitle">Yeni Proje Ekle</h1>
+            </div>
+            <div class="header-actions">
+                <button type="button" class="btn btn-secondary"
+                    onclick="window.location.href='admin.html'">İptal</button>
+                <button type="button" class="btn btn-primary" id="saveBtn">Projeyi Kaydet</button>
+            </div>
+        </header>
+
+        <!-- Form Content -->
+        <div class="form-content">
+            <form id="projectForm" class="project-form-layout">
+
+                <!-- Left Column: Details -->
+                <div class="form-section">
+                    <h2>Proje Detayları</h2>
+
+                    <div class="form-group">
+                        <label for="pTitle">Proje Başlığı</label>
+                        <input type="text" id="pTitle" placeholder="Örn: Kurumsal Kimlik Tasarımı" required>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="pCategory">Kategori</label>
+                            <select id="pCategory" required>
+                                <option value="Marka Kimliği">Marka Kimliği</option>
+                                <option value="Web Tasarım">Web Tasarım</option>
+                                <option value="Sosyal Medya">Sosyal Medya</option>
+                                <option value="Ambalaj">Ambalaj</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="pClient">Müşteri</label>
+                            <input type="text" id="pClient" placeholder="Örn: Google Inc." required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pDescription">Proje Açıklaması</label>
+                        <textarea id="pDescription" rows="6" placeholder="Projenin detaylarını buraya yazın..."
+                            required></textarea>
+                    </div>
+                </div>
+
+                <!-- Right Column: Media -->
+                <div class="form-section">
+                    <h2>Görseller</h2>
+
+                    <!-- Main Image Upload -->
+                    <div class="form-group">
+                        <label>Kapak Görseli <span class="badge-info">Gerekli</span></label>
+                        <div class="upload-zone" id="mainDropzone">
+                            <input type="file" id="mainImageInput" accept="image/*" hidden>
+                            <div class="upload-content" id="mainUploadPlaceholder">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                    <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                                <p>Görseli buraya sürükleyin veya seçin</p>
+                                <span class="upload-hint">JPG, PNG (Max 15MB)</span>
+                            </div>
+                            <div class="preview-area" id="mainPreview" style="display: none;">
+                                <img src="" alt="Preview">
+                                <button type="button" class="remove-btn" id="removeMainBtn">&times;</button>
+                            </div>
+                        </div>
+                        <div class="progress-bar-container" id="mainProgress" style="display: none;">
+                            <div class="progress-bar"></div>
+                            <span>Optimize ediliyor...</span>
+                        </div>
+                    </div>
+
+                    <!-- Gallery Upload -->
+                    <div class="form-group">
+                        <label>Proje Galerisi <span class="badge-info">Çoklu Seçim</span></label>
+                        <div class="upload-zone gallery-zone" id="galleryDropzone">
+                            <input type="file" id="galleryInput" accept="image/*" multiple hidden>
+                            <div class="upload-content">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="1.5">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <p>Görselleri Yükle</p>
+                            </div>
+                        </div>
+                        <div class="gallery-preview-grid" id="galleryGrid">
+                            <!-- JS ile doldurulacak -->
+                        </div>
+                        <div class="progress-bar-container" id="galleryProgress" style="display: none;">
+                            <div class="progress-bar"></div>
+                            <span>Galeri işleniyor...</span>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module" src="admin.js"></script>
+</body>
+
+</html>

@@ -3,6 +3,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const sharp = require('sharp');
 
 const app = express();
 const PORT = 3000;
@@ -20,17 +21,8 @@ const UPLOADS_DIR = path.join(__dirname, '../uploads');
 if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
 
-// Multer Storage Configuration
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, UPLOADS_DIR);
-    },
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
+// Multer Storage Configuration (Memory storage for processing)
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Helper: Read Data
@@ -47,10 +39,9 @@ const writeData = (data) => {
 
 // --- ROUTES ---
 
-// Login (Simple Hardcoded)
+// Login
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
-    // Simple check - in production use hashed passwords
     if (email === 'admin@rioframe.art' && password === 'rioframe2024') {
         res.json({ success: true, token: 'admin-token-secret' });
     } else {
@@ -85,31 +76,118 @@ app.post('/api/projects', (req, res) => {
     res.json(newProject);
 });
 
+// Update Project (PUT)
+app.put('/api/projects/:id', (req, res) => {
+    let projects = readData();
+    const id = req.params.id;
+    const projectIndex = projects.findIndex(p => p.id === id);
+
+    if (projectIndex === -1) {
+        return res.status(404).json({ message: 'Proje bulunamadı' });
+    }
+
+    // Preserve id and createdAt, update other fields
+    projects[projectIndex] = {
+        ...projects[projectIndex],
+        ...req.body,
+        id: id, // Ensure ID doesn't change
+        updatedAt: new Date().toISOString()
+    };
+
+    writeData(projects);
+    res.json(projects[projectIndex]);
+});
+
 // Delete Project
 app.delete('/api/projects/:id', (req, res) => {
     let projects = readData();
     const id = req.params.id;
 
-    // Optional: Delete associated image file
-    const project = projects.find(p => p.id === id);
-    if (project && project.mainImage && project.mainImage.includes('/uploads/')) {
-        const filename = path.basename(project.mainImage);
-        const filePath = path.join(UPLOADS_DIR, filename);
-        if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    }
+    // Note: We are not auto-deleting files to avoid accidental data loss in this version
 
     projects = projects.filter(p => p.id !== id);
     writeData(projects);
     res.json({ success: true });
 });
 
-// Upload Image
-app.post('/api/upload', upload.single('image'), (req, res) => {
-    if (req.file) {
-        // Return relative path
-        res.json({ url: `/uploads/${req.file.filename}` });
-    } else {
-        res.status(400).json({ message: 'Dosya yüklenemedi' });
+// Upload Single Image (With Optimization)
+app.post('/api/upload', upload.single('image'), async (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ message: 'Dosya yüklenemedi' });
+    }
+
+    try {
+        const timestamp = Date.now();
+        const originalName = req.file.originalname.replace(/\.[^/.]+$/, ""); // remove extension
+
+        // Filenames
+        const originalFilename = `${timestamp}-${originalName}-original${path.extname(req.file.originalname)}`;
+        const optimizedFilename = `${timestamp}-${originalName}.webp`;
+
+        // Paths
+        const originalPath = path.join(UPLOADS_DIR, originalFilename);
+        const optimizedPath = path.join(UPLOADS_DIR, optimizedFilename);
+
+        // 1. Save Original
+        await fs.promises.writeFile(originalPath, req.file.buffer);
+
+        // 2. Process & Save Optimized (WebP, Max 1920px width, 80% Quality)
+        await sharp(req.file.buffer)
+            .resize({ width: 1920, withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toFile(optimizedPath);
+
+        res.json({
+            optimizedUrl: `/uploads/${optimizedFilename}`,
+            originalUrl: `/uploads/${originalFilename}`
+        });
+
+    } catch (error) {
+        console.error('Image processing error:', error);
+        res.status(500).json({ message: 'Görsel işlenirken hata oluştu' });
+    }
+});
+
+// Upload Multiple Images (For Gallery)
+app.post('/api/upload-multiple', upload.array('images', 10), async (req, res) => {
+    if (!req.files || req.files.length === 0) {
+        return res.status(400).json({ message: 'Dosya seçilmedi' });
+    }
+
+    try {
+        const results = [];
+
+        for (const file of req.files) {
+            const timestamp = Date.now() + Math.round(Math.random() * 1000);
+            const originalName = file.originalname.replace(/\.[^/.]+$/, "");
+
+            const originalFilename = `${timestamp}-${originalName}-original${path.extname(file.originalname)}`;
+            const optimizedFilename = `${timestamp}-${originalName}.webp`;
+
+            const originalPath = path.join(UPLOADS_DIR, originalFilename);
+            const optimizedPath = path.join(UPLOADS_DIR, optimizedFilename);
+
+            // Save Original
+            await fs.promises.writeFile(originalPath, file.buffer);
+
+            // Save Optimized
+            await sharp(file.buffer)
+                .resize({ width: 1920, withoutEnlargement: true })
+                .resize({ height: 1080, fit: 'inside', withoutEnlargement: true }) // Fit within 1920x1080
+                .webp({ quality: 80 })
+                .toFile(optimizedPath);
+
+            results.push({
+                optimizedUrl: `/uploads/${optimizedFilename}`,
+                originalUrl: `/uploads/${originalFilename}`
+            });
+        }
+
+        res.json(results);
+
+    } catch (error) {
+        console.error('Batch processing error:', error);
+        res.status(500).json({ message: 'Galeri yüklenirken hata oluştu' });
     }
 });
 
