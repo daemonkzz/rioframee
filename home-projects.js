@@ -2,9 +2,11 @@
    HOME PAGE PROJECTS (API LOADER)
    ============================ */
 
-const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? 'http://localhost:3000/api'
-    : '/api';
+// API Config - Support localhost, file:// protocol, and production
+const isLocalDev = window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.protocol === 'file:';
+const API_URL = isLocalDev ? 'http://localhost:3000/api' : '/api';
 
 document.addEventListener('DOMContentLoaded', async () => {
     const slider = document.getElementById('homeProjectsSlider');
