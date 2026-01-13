@@ -119,6 +119,7 @@ async function initProjectForm() {
     const galleryDropzone = document.getElementById('galleryDropzone');
     const galleryInput = document.getElementById('galleryInput');
     const galleryGrid = document.getElementById('galleryGrid');
+    let draggedIndex = null;
 
     // --- GALLERY FUNCTIONS (Must be declared before loadProjectData uses them) ---
     function renderGallery() {
@@ -126,14 +127,60 @@ async function initProjectForm() {
         galleryGrid.innerHTML = '';
         galleryImages.forEach((img, index) => {
             const url = typeof img === 'string' ? img : img.optimizedUrl;
+            const isLoading = img === 'loading';
             const div = document.createElement('div');
-            div.className = 'gallery-item-preview';
-            div.innerHTML = `
-                <img src="${getImageUrl(url)}" alt="">
-                <button type="button" class="gallery-remove" data-index="${index}">&times;</button>
-            `;
+            div.className = 'gallery-item-preview' + (isLoading ? ' loading' : '');
+            div.draggable = !isLoading;
+            div.dataset.index = index;
+
+            if (isLoading) {
+                div.innerHTML = `
+                    <div class="gallery-loading">
+                        <div class="spinner"></div>
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <img src="${getImageUrl(url)}" alt="">
+                    <button type="button" class="gallery-remove" data-index="${index}">&times;</button>
+                    <span class="drag-handle">⋮⋮</span>
+                `;
+            }
+
+            // Drag events
+            div.addEventListener('dragstart', (e) => {
+                if (isLoading) return;
+                draggedIndex = index;
+                e.currentTarget.classList.add('dragging');
+            });
+            div.addEventListener('dragend', (e) => {
+                e.currentTarget.classList.remove('dragging');
+                draggedIndex = null;
+            });
+            div.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add('drag-over');
+            });
+            div.addEventListener('dragleave', (e) => {
+                e.currentTarget.classList.remove('drag-over');
+            });
+            div.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('drag-over');
+                const toIndex = parseInt(e.currentTarget.dataset.index);
+                if (draggedIndex !== null && draggedIndex !== toIndex) {
+                    // Swap positions
+                    const item = galleryImages[draggedIndex];
+                    galleryImages.splice(draggedIndex, 1);
+                    galleryImages.splice(toIndex, 0, item);
+                    renderGallery();
+                }
+            });
+
             galleryGrid.appendChild(div);
         });
+
+        // Remove button events
         document.querySelectorAll('.gallery-remove').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 const idx = parseInt(e.currentTarget.dataset.index);
@@ -143,27 +190,47 @@ async function initProjectForm() {
         });
     }
 
+    // Progressive upload - tek tek yükle ve göster
     async function handleGalleryUpload(files) {
         if (!files.length) return;
-        document.getElementById('galleryProgress').style.display = 'flex';
-        const formData = new FormData();
+
+        // Önce tüm dosyalar için loading placeholder ekle
         for (let i = 0; i < files.length; i++) {
-            formData.append('images', files[i]);
+            galleryImages.push('loading');
         }
-        try {
-            const response = await fetch(`${API_URL}/upload-multiple`, {
-                method: 'POST',
-                body: formData
-            });
-            if (!response.ok) throw new Error('Galeri yükleme hatası');
-            const results = await response.json();
-            galleryImages = [...galleryImages, ...results];
-            renderGallery();
-        } catch (error) {
-            alert(error.message);
-        } finally {
-            document.getElementById('galleryProgress').style.display = 'none';
+        renderGallery();
+
+        // Tek tek yükle
+        let loadingIndex = galleryImages.length - files.length;
+
+        for (let i = 0; i < files.length; i++) {
+            try {
+                const formData = new FormData();
+                formData.append('images', files[i]);
+
+                const response = await fetch(`${API_URL}/upload-multiple`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Yükleme hatası');
+                const results = await response.json();
+
+                // Loading'i gerçek görsel ile değiştir
+                if (results.length > 0) {
+                    galleryImages[loadingIndex + i] = results[0];
+                    renderGallery();
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                // Hatalı olanı kaldır
+                galleryImages[loadingIndex + i] = null;
+            }
         }
+
+        // Null olanları temizle
+        galleryImages = galleryImages.filter(img => img && img !== 'loading');
+        renderGallery();
     }
 
     // Helper: Load Data for Edit (Defined before call)
