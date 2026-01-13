@@ -107,12 +107,12 @@ function initCustomCursor() {
    PARALLAX SCROLLING
    ============================ */
 function initParallax() {
-    // Hakkımızda bölümündeki RioFrame görseline parallax uygula
-    const aboutVisual = document.querySelector('.about-visual');
+    // Hakkımızda bölümündeki görseller
     const aboutImage = document.querySelector('.about-image-wrapper');
-    const target = aboutImage || aboutVisual;
+    const arrowLeft = document.querySelector('.about-arrow-left');
+    const arrowRight = document.querySelector('.about-arrow-right');
 
-    if (!target) return;
+    if (!aboutImage && !arrowLeft) return;
 
     let ticking = false;
 
@@ -127,15 +127,31 @@ function initParallax() {
     });
 
     function updateParallax() {
-        const rect = target.getBoundingClientRect();
+        const scrollY = window.scrollY;
+        const aboutSection = document.querySelector('.about-section');
+        if (!aboutSection) return;
 
-        // Element viewport'ta görünürse
-        if (rect.top < window.innerHeight && rect.bottom > 0) {
-            // Scroll pozisyonuna göre Y offset hesapla
-            const speed = 0.12;
-            const yPos = (rect.top - window.innerHeight / 2) * speed;
+        const sectionRect = aboutSection.getBoundingClientRect();
 
-            target.style.transform = `translateY(${yPos}px)`;
+        // Section viewport'ta görünürse
+        if (sectionRect.top < window.innerHeight && sectionRect.bottom > 0) {
+            const speed = 0.08;
+            const yPos = (sectionRect.top - window.innerHeight / 2) * speed;
+
+            // Ana görsel
+            if (aboutImage) {
+                aboutImage.style.transform = `translateY(${yPos}px)`;
+            }
+
+            // Sol ok - daha yavaş, farklı yönde
+            if (arrowLeft) {
+                arrowLeft.style.transform = `translateY(${yPos * 1.5}px) rotate(-5deg)`;
+            }
+
+            // Sağ ok - daha yavaş, farklı yönde
+            if (arrowRight) {
+                arrowRight.style.transform = `translateY(${yPos * 1.8}px) rotate(5deg)`;
+            }
         }
     }
 }

@@ -78,8 +78,12 @@
                 document.querySelector('.nav-project.next .nav-title').textContent = nextProject.title;
             }
 
+            // İçerik yüklendi - göster
+            document.body.classList.add('loaded');
+
         } catch (error) {
             console.error(error);
+            document.body.classList.add('loaded');
             document.querySelector('main').innerHTML = '<h1 style="text-align:center; color:white; padding: 5rem;">Yüklenemedi</h1>';
         }
     });
@@ -106,8 +110,8 @@
         return path;
     }
 
-    // Lightbox Logic
-    function openLightbox(imageUrl, originalUrl) {
+    // Lightbox Logic - Global scope'a taşı
+    window.openLightbox = function (imageUrl, originalUrl) {
         // Check if exists
         let lightbox = document.getElementById('customLightbox');
         if (!lightbox) {
@@ -149,7 +153,7 @@
         requestAnimationFrame(() => lightbox.style.opacity = '1');
     }
 
-    function closeLightbox() {
+    window.closeLightbox = function () {
         const lightbox = document.getElementById('customLightbox');
         if (lightbox) {
             lightbox.style.opacity = '0';

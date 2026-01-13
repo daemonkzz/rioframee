@@ -2,6 +2,22 @@
    PROJECT DETAIL PAGE STYLES
    ============================ */
 
+/* Loading State - İçerik yüklenene kadar gizli */
+.project-detail-hero,
+.project-gallery,
+.project-details-section,
+.project-navigation {
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+body.loaded .project-detail-hero,
+body.loaded .project-gallery,
+body.loaded .project-details-section,
+body.loaded .project-navigation {
+    opacity: 1;
+}
+
 /* Project Detail Hero */
 .project-detail-hero {
     padding: 140px 40px 60px;
