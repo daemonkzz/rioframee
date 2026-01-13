@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Giriş | RioFrame</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body class="admin-login-body">
+
+    <div class="login-container">
+        <div class="login-header">
+            <div class="logo-container">
+                <img src="rioframelogo.png" alt="RioFrame Logo" class="login-logo">
+            </div>
+            <h1>Yönetici Girişi</h1>
+            <p>Devam etmek için lütfen giriş yapın.</p>
+        </div>
+
+        <form id="loginForm" class="login-form">
+            <div class="form-group">
+                <label for="email">E-posta Adresi</label>
+                <input type="email" id="email" placeholder="admin@rioframe.art" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Şifre</label>
+                <input type="password" id="password" placeholder="••••••••" required>
+            </div>
+
+            <div id="loginError" class="error-message" style="display: none;">
+                Giriş bilgileri hatalı. Lütfen tekrar deneyin.
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <span>Giriş Yap</span>
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <a href="/" class="back-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Siteye Dön
+            </a>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module" src="admin.js"></script>
+</body>
+
+</html>
