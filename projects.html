@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeler | RioFrame</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="projects-page.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="rioframelogo.png" alt="RioFrame Logo">
+                <span>RioFrame</span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Ana Sayfa</a></li>
+                <li><a href="projects.html" class="nav-link active">Projeler</a></li>
+                <li><a href="index.html#about" class="nav-link">Hakkımızda</a></li>
+                <li><a href="index.html#contact" class="nav-link nav-cta">İletişim</a></li>
+            </ul>
+            <button class="nav-toggle" aria-label="Menü">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Header -->
+    <section class="projects-hero">
+        <div class="projects-hero-content">
+            <span class="page-badge">
+                <span class="badge-dot"></span>
+                Portfolyo
+            </span>
+            <h1 class="projects-hero-title">Tüm <span class="title-accent">Projelerimiz</span></h1>
+            <p class="projects-hero-description">Premium kalitede tasarım ve yaratıcılığın buluştuğu projelerimizi
+                keşfedin.</p>
+        </div>
+    </section>
+
+    <!-- Filtreler -->
+    <section class="projects-filters-section">
+        <div class="container">
+            <div class="filters-wrapper">
+                <button class="filter-btn active" data-filter="all">Tümü</button>
+                <button class="filter-btn" data-filter="branding">Marka Kimliği</button>
+                <button class="filter-btn" data-filter="web">Web Tasarım</button>
+                <button class="filter-btn" data-filter="social">Sosyal Medya</button>
+                <button class="filter-btn" data-filter="package">Ambalaj</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projeler Grid -->
+    <section class="all-projects-section">
+        <div class="container">
+            <div class="projects-masonry">
+                <!-- Proje 1 -->
+                <a href="project-detail.html?id=1" class="project-item" data-category="branding">
+                    <div class="project-item-image">
+                        <span class="project-item-category">Marka Kimliği</span>
+                        <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&h=450&fit=crop"
+                            alt="Kurumsal Kimlik">
+                        <div class="project-item-overlay">
+                            <span class="view-project">Projeyi Görüntüle</span>
+                        </div>
+                    </div>
+                    <div class="project-item-info">
+                        <h3>Kurumsal Kimlik</h3>
+                        <p>Premium marka için logo ve kurumsal kimlik tasarımı</p>
+                    </div>
+                </a>
+
+                <!-- Proje 2 -->
+                <a href="project-detail.html?id=2" class="project-item" data-category="web">
+                    <div class="project-item-image">
+                        <span class="project-item-category">Web Tasarım</span>
+                        <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=450&fit=crop"
+                            alt="E-Ticaret Sitesi">
+                        <div class="project-item-overlay">
+                            <span class="view-project">Projeyi Görüntüle</span>
+                        </div>
+                    </div>
+                    <div class="project-item-info">
+                        <h3>E-Ticaret Sitesi</h3>
+                        <p>Modern ve kullanıcı dostu web tasarımı</p>
+                    </div>
+                </a>
+
+                <!-- Proje 3 -->
+                <a href="project-detail.html?id=3" class="project-item" data-category="social">
+                    <div class="project-item-image">
+                        <span class="project-item-category">Sosyal Medya</span>
+                        <img src="https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=600&h=450&fit=crop"
+                            alt="Sosyal Medya">
+                        <div class="project-item-overlay">
+                            <span class="view-project">Projeyi Görüntüle</span>
+                        </div>
+                    </div>
+                    <div class="project-item-info">
+                        <h3>Sosyal Medya</h3>
+                        <p>Instagram için içerik ve görsel tasarım</p>
+                    </div>
+                </a>
+
+                <!-- Proje 4 -->
+                <a href="project-detail.html?id=4" class="project-item" data-category="package">
+                    <div class="project-item-image">
+                        <span class="project-item-category">Ambalaj</span>
+                        <img src="https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=600&h=450&fit=crop"
+                            alt="Ambalaj Tasarımı">
+                        <div class="project-item-overlay">
+                            <span class="view-project">Projeyi Görüntüle</span>
+                        </div>
+                    </div>
+                    <div class="project-item-info">
+                        <h3>Ambalaj Tasarımı</h3>
+                        <p>Ürün ambalaj ve etiket tasarımı</p>
+                    </div>
+                </a>
+
+                <!-- Proje 5 -->
+                <a href="project-detail.html?id=5" class="project-item" data-category="branding">
+                    <div class="project-item-image">
+                        <span class="project-item-category">Marka Kimliği</span>
+                        <img src="https://images.unsplash.com/photo-1542744094-3a31f272c490?w=600&h=450&fit=crop"
+                            alt="Logo Tasarımı">
+                        <div class="project-item-overlay">
+                            <span class="view-project">Projeyi Görüntüle</span>
+                        </div>
+                    </div>
+                    <div class="project-item-info">
+                        <h3>Logo Tasarımı</h3>
+                        <p>Minimal ve etkileyici logo çalışması</p>
+                    </div>
+                </a>
+
+                <!-- Proje 6 -->
+                <a href="project-detail.html?id=6" class="project-item" data-category="web">
+                    <div class="project-item-image">
+                        <span class="project-item-category">Web Tasarım</span>
+                        <img src="https://images.unsplash.com/photo-1467232004584-a241de8bcf5d?w=600&h=450&fit=crop"
+                            alt="Portfolyo Sitesi">
+                        <div class="project-item-overlay">
+                            <span class="view-project">Projeyi Görüntüle</span>
+                        </div>
+                    </div>
+                    <div class="project-item-info">
+                        <h3>Portfolyo Sitesi</h3>
+                        <p>Kişisel portfolyo web sitesi tasarımı</p>
+                    </div>
+                </a>
+
+                <!-- Proje 7 -->
+                <a href="project-detail.html?id=7" class="project-item" data-category="branding">
+                    <div class="project-item-image">
+                        <span class="project-item-category">Marka Kimliği</span>
+                        <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=600&h=450&fit=crop"
+                            alt="Marka Rehberi">
+                        <div class="project-item-overlay">
+                            <span class="view-project">Projeyi Görüntüle</span>
+                        </div>
+                    </div>
+                    <div class="project-item-info">
+                        <h3>Marka Rehberi</h3>
+                        <p>Kapsamlı marka kılavuzu hazırlama</p>
+                    </div>
+                </a>
+
+                <!-- Proje 8 -->
+                <a href="project-detail.html?id=8" class="project-item" data-category="social">
+                    <div class="project-item-image">
+                        <span class="project-item-category">Sosyal Medya</span>
+                        <img src="https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=600&h=450&fit=crop"
+                            alt="Kampanya Görselleri">
+                        <div class="project-item-overlay">
+                            <span class="view-project">Projeyi Görüntüle</span>
+                        </div>
+                    </div>
+                    <div class="project-item-info">
+                        <h3>Kampanya Görselleri</h3>
+                        <p>Dijital pazarlama kampanya görselleri</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RioFrame. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script src="projects-page.js"></script>
+</body>
+
+</html>

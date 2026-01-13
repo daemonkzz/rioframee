@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proje Detayı | RioFrame</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="project-detail.css">
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="rioframelogo.png" alt="RioFrame Logo">
+                <span>RioFrame</span>
+            </a>
+            <ul class="nav-menu">
+                <li><a href="index.html" class="nav-link">Ana Sayfa</a></li>
+                <li><a href="projects.html" class="nav-link">Projeler</a></li>
+                <li><a href="index.html#about" class="nav-link">Hakkımızda</a></li>
+                <li><a href="index.html#contact" class="nav-link nav-cta">İletişim</a></li>
+            </ul>
+            <button class="nav-toggle" aria-label="Menü">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Project Hero -->
+    <section class="project-detail-hero">
+        <div class="project-hero-content">
+            <a href="projects.html" class="back-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                </svg>
+                Tüm Projeler
+            </a>
+            <span class="project-category-tag" id="projectCategory">Marka Kimliği</span>
+            <h1 class="project-detail-title" id="projectTitle">Kurumsal Kimlik</h1>
+            <p class="project-detail-description" id="projectDescription">Premium marka için logo ve kurumsal kimlik
+                tasarımı. Modern ve minimal tasarım anlayışıyla oluşturulan bu proje, markanın değerlerini en iyi
+                şekilde yansıtmaktadır.</p>
+
+            <div class="project-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Müşteri</span>
+                    <span class="meta-value" id="projectClient">Premium Marka</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Kategori</span>
+                    <span class="meta-value" id="projectCategoryMeta">Marka Kimliği</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Tarih</span>
+                    <span class="meta-value">2024</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project Gallery -->
+    <section class="project-gallery">
+        <div class="gallery-container">
+            <!-- Ana Görsel -->
+            <div class="gallery-main">
+                <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=1200&h=800&fit=crop"
+                    alt="Proje Ana Görsel" id="mainImage">
+            </div>
+
+            <!-- Görsel Grid -->
+            <div class="gallery-grid" id="galleryGrid">
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1561070791-36c11f7c3d9f?w=600&h=400&fit=crop"
+                        alt="Proje Görsel 1">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1542744094-3a31f272c490?w=600&h=400&fit=crop"
+                        alt="Proje Görsel 2">
+                </div>
+                <div class="gallery-item large">
+                    <img src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1200&h=600&fit=crop"
+                        alt="Proje Görsel 3">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&h=400&fit=crop"
+                        alt="Proje Görsel 4">
+                </div>
+                <div class="gallery-item">
+                    <img src="https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=600&h=400&fit=crop"
+                        alt="Proje Görsel 5">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Project Details -->
+    <section class="project-details-section">
+        <div class="container">
+            <div class="details-grid">
+                <div class="details-content">
+                    <h2>Proje Hakkında</h2>
+                    <p>Bu projede, müşterimizin marka değerlerini en iyi şekilde yansıtacak modern ve minimal bir kimlik
+                        tasarımı oluşturduk. Logo, renk paleti, tipografi ve görsel dil birbirleriyle uyumlu bir
+                        bütünlük içinde tasarlandı.</p>
+                    <p>Tasarım sürecinde müşterimizin hedef kitlesini ve sektördeki konumunu dikkate alarak, hem özgün
+                        hem de akılda kalıcı bir marka kimliği oluşturduk.</p>
+                </div>
+                <div class="details-services">
+                    <h3>Hizmetler</h3>
+                    <ul class="services-list">
+                        <li>Logo Tasarımı</li>
+                        <li>Kurumsal Kimlik</li>
+                        <li>Marka Kılavuzu</li>
+                        <li>Kartvizit Tasarımı</li>
+                        <li>Sosyal Medya Görselleri</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Navigation -->
+    <section class="project-navigation">
+        <div class="container">
+            <div class="nav-projects">
+                <a href="project-detail.html?id=6" class="nav-project prev">
+                    <span class="nav-label">Önceki Proje</span>
+                    <span class="nav-title">Portfolyo Sitesi</span>
+                </a>
+                <a href="projects.html" class="nav-all">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                    </svg>
+                </a>
+                <a href="project-detail.html?id=2" class="nav-project next">
+                    <span class="nav-label">Sonraki Proje</span>
+                    <span class="nav-title">E-Ticaret Sitesi</span>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 RioFrame. Tüm hakları saklıdır.</p>
+        </div>
+    </footer>
+
+    <script src="project-detail.js"></script>
+</body>
+
+</html>
