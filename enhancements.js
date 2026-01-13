@@ -107,22 +107,13 @@ function initCustomCursor() {
    PARALLAX SCROLLING
    ============================ */
 function initParallax() {
-    const parallaxElements = document.querySelectorAll('[data-parallax]');
-
-    // Add parallax data attributes to elements
-    const heroContent = document.querySelector('.hero-content');
-    const floatingFrames = document.querySelectorAll('.photo-frame');
+    // Hakkımızda bölümündeki RioFrame görseline parallax uygula
+    const aboutVisual = document.querySelector('.about-visual');
     const aboutImage = document.querySelector('.about-image-wrapper');
+    const target = aboutImage || aboutVisual;
 
-    if (heroContent) heroContent.dataset.parallax = '0.3';
+    if (!target) return;
 
-    floatingFrames.forEach((frame, i) => {
-        frame.dataset.parallax = (0.1 + i * 0.05).toString();
-    });
-
-    if (aboutImage) aboutImage.dataset.parallax = '0.2';
-
-    // Update on scroll
     let ticking = false;
 
     window.addEventListener('scroll', () => {
@@ -136,18 +127,16 @@ function initParallax() {
     });
 
     function updateParallax() {
-        const scrollY = window.scrollY;
+        const rect = target.getBoundingClientRect();
 
-        document.querySelectorAll('[data-parallax]').forEach(el => {
-            const speed = parseFloat(el.dataset.parallax) || 0.5;
-            const rect = el.getBoundingClientRect();
+        // Element viewport'ta görünürse
+        if (rect.top < window.innerHeight && rect.bottom > 0) {
+            // Scroll pozisyonuna göre Y offset hesapla
+            const speed = 0.12;
+            const yPos = (rect.top - window.innerHeight / 2) * speed;
 
-            // Only animate if element is in viewport
-            if (rect.top < window.innerHeight && rect.bottom > 0) {
-                const offset = (scrollY - el.offsetTop) * speed;
-                el.style.transform = `translateY(${offset}px)`;
-            }
-        });
+            target.style.transform = `translateY(${yPos}px)`;
+        }
     }
 }
 
