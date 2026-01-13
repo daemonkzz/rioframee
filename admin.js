@@ -208,8 +208,11 @@ async function initProjectForm() {
                 const formData = new FormData();
                 formData.append('images', files[i]);
 
-                const response = await fetch(`${API_URL}/upload-multiple`, {
+                const response = await fetch(`${API_URL}/upload-batch`, {
                     method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
                     body: formData
                 });
 
