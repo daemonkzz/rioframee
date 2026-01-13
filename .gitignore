@@ -15,3 +15,8 @@ Thumbs.db
 # Build outputs (if any)
 dist/
 build/
+
+# Environment
+.env
+server/.env
+server/data/

@@ -4,6 +4,15 @@ const isLocalDev = window.location.hostname === 'localhost' ||
     window.location.protocol === 'file:';
 const API_URL = isLocalDev ? 'http://localhost:3000/api' : '/api';
 
+// Auth Header Helper - Tüm korumalı isteklerde kullanılacak
+function getAuthHeaders() {
+    const token = localStorage.getItem('adminToken');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    };
+}
+
 // --- MAIN INIT ---
 document.addEventListener('DOMContentLoaded', () => {
     // Page Router (Simple)
@@ -80,10 +89,14 @@ async function handleDelete(e) {
     if (!confirm('Bu projeyi silmek istediğinize emin misiniz?')) return;
     const id = e.currentTarget.dataset.id;
     try {
-        await fetch(`${API_URL}/projects/${id}`, { method: 'DELETE' });
+        const res = await fetch(`${API_URL}/projects/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error('Silme başarısız');
         loadProjects();
     } catch (error) {
-        alert('Silme başarısız');
+        alert('Silme başarısız: ' + error.message);
     }
 }
 
@@ -255,13 +268,13 @@ async function initProjectForm() {
             if (projectId) {
                 res = await fetch(`${API_URL}/projects/${projectId}`, {
                     method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify(projectData)
                 });
             } else {
                 res = await fetch(`${API_URL}/projects`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: getAuthHeaders(),
                     body: JSON.stringify(projectData)
                 });
             }

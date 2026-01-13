@@ -1,100 +1,270 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const sharp = require('sharp');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// Security: Helmet middleware
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
+
+// Security: CORS - Kısıtlı origin'ler
+const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
+app.use(cors({
+    origin: function (origin, callback) {
+        // file:// protokolü için origin undefined olabilir
+        if (!origin || allowedOrigins.some(allowed => origin.startsWith(allowed) || allowed === 'file://')) {
+            callback(null, true);
+        } else {
+            callback(new Error('CORS policy violation'));
+        }
+    },
+    credentials: true
+}));
+
+// Security: Global Rate Limiting
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 dakika
+    max: 100, // IP başına 100 istek
+    message: { error: 'Çok fazla istek. Lütfen daha sonra tekrar deneyin.' }
+});
+app.use(globalLimiter);
 
 // Middleware
-app.use(cors());
-app.use(express.json({ limit: '300mb' }));
-app.use(express.urlencoded({ extended: true, limit: '300mb' }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use('/uploads', express.static(path.join(__dirname, '../uploads'), { maxAge: '30d' }));
 
-// Data File Path
+// Data File Paths
 const DATA_FILE = path.join(__dirname, 'data', 'projects.json');
+const CONTACT_FILE = path.join(__dirname, 'data', 'contacts.json');
 const UPLOADS_DIR = path.join(__dirname, '../uploads');
 
 // Ensure directories exist
 if (!fs.existsSync(path.join(__dirname, 'data'))) fs.mkdirSync(path.join(__dirname, 'data'));
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR);
 
-// Multer Storage Configuration (Memory storage for processing)
+// Multer Storage Configuration
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 300 * 1024 * 1024 } // 300MB limit
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        if (extname && mimetype) {
+            cb(null, true);
+        } else {
+            cb(new Error('Sadece resim dosyaları yüklenebilir'));
+        }
+    }
 });
 
-// Helper: Read Data
+// ===== HELPER FUNCTIONS =====
+
 const readData = () => {
     if (!fs.existsSync(DATA_FILE)) return [];
     const data = fs.readFileSync(DATA_FILE);
     return JSON.parse(data);
 };
 
-// Helper: Write Data
 const writeData = (data) => {
     fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 };
 
-// --- ROUTES ---
+const readContacts = () => {
+    if (!fs.existsSync(CONTACT_FILE)) return [];
+    const data = fs.readFileSync(CONTACT_FILE);
+    return JSON.parse(data);
+};
 
-// Login
-app.post('/api/login', (req, res) => {
-    const { email, password } = req.body;
-    if (email === 'admin@rioframe.art' && password === 'rioframe2024') {
-        res.json({ success: true, token: 'admin-token-secret' });
-    } else {
-        res.status(401).json({ success: false, message: 'Giriş başarısız' });
+const writeContacts = (data) => {
+    fs.writeFileSync(CONTACT_FILE, JSON.stringify(data, null, 2));
+};
+
+// HTML sanitization helper
+const sanitizeHtml = (str) => {
+    if (typeof str !== 'string') return str;
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/\//g, '&#x2F;');
+};
+
+// ===== SECURITY MIDDLEWARE =====
+
+// JWT Token doğrulama middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+        return res.status(401).json({ error: 'Yetkilendirme gerekli' });
     }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ error: 'Geçersiz veya süresi dolmuş token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// Login rate limiting - Brute force koruması
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 dakika
+    max: 5, // 5 deneme
+    message: { error: 'Çok fazla giriş denemesi. 15 dakika bekleyin.' }
 });
 
-// Get All Projects
+// Contact form rate limiting
+const contactLimiter = rateLimit({
+    windowMs: 30 * 1000, // 30 saniye
+    max: 1,
+    message: { error: 'Lütfen 30 saniye bekleyin.' }
+});
+
+// ===== ROUTES =====
+
+// Login
+app.post('/api/login', loginLimiter, [
+    body('email').isEmail().normalizeEmail(),
+    body('password').isLength({ min: 6 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Geçersiz giriş bilgileri' });
+    }
+
+    const { email, password } = req.body;
+
+    // Email kontrolü
+    if (email !== process.env.ADMIN_EMAIL) {
+        return res.status(401).json({ success: false, error: 'Giriş başarısız' });
+    }
+
+    // Şifre kontrolü - bcrypt ile
+    const isValidPassword = await bcrypt.compare(password, process.env.ADMIN_PASSWORD_HASH);
+
+    // Development modunda plain text şifre kontrolü de yap
+    const isDevPassword = process.env.NODE_ENV === 'development' && password === 'rioframe2024';
+
+    if (!isValidPassword && !isDevPassword) {
+        return res.status(401).json({ success: false, error: 'Giriş başarısız' });
+    }
+
+    // JWT Token oluştur
+    const token = jwt.sign(
+        { email: email, role: 'admin' },
+        process.env.JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+
+    res.json({ success: true, token: token });
+});
+
+// Token doğrulama endpoint
+app.get('/api/verify-token', authenticateToken, (req, res) => {
+    res.json({ valid: true, user: req.user });
+});
+
+// ===== PUBLIC ROUTES =====
+
+// Get All Projects (Public)
 app.get('/api/projects', (req, res) => {
     const projects = readData();
     res.json(projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 });
 
-// Get Single Project
+// Get Single Project (Public)
 app.get('/api/projects/:id', (req, res) => {
     const projects = readData();
     const project = projects.find(p => p.id === req.params.id);
     if (project) res.json(project);
-    else res.status(404).json({ message: 'Proje bulunamadı' });
+    else res.status(404).json({ error: 'Proje bulunamadı' });
 });
 
+// Contact Form (Public with rate limit)
+app.post('/api/contact', contactLimiter, [
+    body('name').trim().escape().isLength({ min: 2, max: 100 }),
+    body('phone').trim().escape().isLength({ min: 7, max: 20 }),
+    body('message').trim().escape().isLength({ min: 10, max: 1000 })
+], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: 'Lütfen tüm alanları doğru doldurun.' });
+    }
+
+    const { name, phone, message } = req.body;
+
+    const contacts = readContacts();
+    const newContact = {
+        id: Date.now().toString(),
+        name: sanitizeHtml(name),
+        phone: sanitizeHtml(phone),
+        message: sanitizeHtml(message),
+        createdAt: new Date().toISOString(),
+        isRead: false
+    };
+
+    contacts.push(newContact);
+    writeContacts(contacts);
+
+    res.json({ success: true, message: 'Mesajınız gönderildi.' });
+});
+
+// ===== PROTECTED ROUTES (Admin) =====
+
 // Create Project
-app.post('/api/projects', (req, res) => {
+app.post('/api/projects', authenticateToken, (req, res) => {
     const projects = readData();
     const newProject = {
         id: Date.now().toString(),
         createdAt: new Date().toISOString(),
-        ...req.body
+        ...req.body,
+        // Sanitize text fields
+        title: sanitizeHtml(req.body.title),
+        description: sanitizeHtml(req.body.description),
+        client: sanitizeHtml(req.body.client)
     };
     projects.push(newProject);
     writeData(projects);
     res.json(newProject);
 });
 
-// Update Project (PUT)
-app.put('/api/projects/:id', (req, res) => {
+// Update Project
+app.put('/api/projects/:id', authenticateToken, (req, res) => {
     let projects = readData();
     const id = req.params.id;
     const projectIndex = projects.findIndex(p => p.id === id);
 
     if (projectIndex === -1) {
-        return res.status(404).json({ message: 'Proje bulunamadı' });
+        return res.status(404).json({ error: 'Proje bulunamadı' });
     }
 
-    // Preserve id and createdAt, update other fields
     projects[projectIndex] = {
         ...projects[projectIndex],
         ...req.body,
-        id: id, // Ensure ID doesn't change
+        title: sanitizeHtml(req.body.title),
+        description: sanitizeHtml(req.body.description),
+        client: sanitizeHtml(req.body.client),
+        id: id,
         updatedAt: new Date().toISOString()
     };
 
@@ -103,81 +273,83 @@ app.put('/api/projects/:id', (req, res) => {
 });
 
 // Delete Project
-app.delete('/api/projects/:id', (req, res) => {
+app.delete('/api/projects/:id', authenticateToken, (req, res) => {
     let projects = readData();
-    const id = req.params.id;
+    const project = projects.find(p => p.id === req.params.id);
 
-    // Note: We are not auto-deleting files to avoid accidental data loss in this version
+    if (!project) {
+        return res.status(404).json({ error: 'Proje bulunamadı' });
+    }
 
-    projects = projects.filter(p => p.id !== id);
+    // Görselleri sil
+    const deleteImage = (url) => {
+        if (url && typeof url === 'string' && url.startsWith('/uploads/')) {
+            const filePath = path.join(__dirname, '..', url);
+            if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+        } else if (url && typeof url === 'object') {
+            if (url.optimizedUrl) deleteImage(url.optimizedUrl);
+            if (url.originalUrl) deleteImage(url.originalUrl);
+        }
+    };
+
+    deleteImage(project.mainImage);
+    if (project.gallery) project.gallery.forEach(deleteImage);
+
+    projects = projects.filter(p => p.id !== req.params.id);
     writeData(projects);
     res.json({ success: true });
 });
 
-// Upload Single Image (With Optimization)
-app.post('/api/upload', upload.single('image'), async (req, res) => {
+// Upload Image
+app.post('/api/upload', authenticateToken, upload.single('image'), async (req, res) => {
     if (!req.file) {
-        return res.status(400).json({ message: 'Dosya yüklenemedi' });
+        return res.status(400).json({ error: 'Görsel yüklenemedi' });
     }
 
     try {
-        const timestamp = Date.now();
-        const originalName = req.file.originalname.replace(/\.[^/.]+$/, ""); // remove extension
+        const originalFilename = `original_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+        const optimizedFilename = `optimized_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`;
 
-        // Filenames
-        const originalFilename = `${timestamp}-${originalName}-original${path.extname(req.file.originalname)}`;
-        const optimizedFilename = `${timestamp}-${originalName}.webp`;
-
-        // Paths
         const originalPath = path.join(UPLOADS_DIR, originalFilename);
         const optimizedPath = path.join(UPLOADS_DIR, optimizedFilename);
 
-        // 1. Save Original
-        await fs.promises.writeFile(originalPath, req.file.buffer);
+        fs.writeFileSync(originalPath, req.file.buffer);
 
-        // 2. Process & Save Optimized (WebP, Max 1920px width, 80% Quality)
         await sharp(req.file.buffer)
-            .resize({ width: 1920, withoutEnlargement: true })
-            .webp({ quality: 80 })
+            .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true })
+            .webp({ quality: 85 })
             .toFile(optimizedPath);
 
         res.json({
             optimizedUrl: `/uploads/${optimizedFilename}`,
             originalUrl: `/uploads/${originalFilename}`
         });
-
     } catch (error) {
-        console.error('Image processing error:', error);
-        res.status(500).json({ message: 'Görsel işlenirken hata oluştu' });
+        console.error('Upload error:', error);
+        res.status(500).json({ error: 'Görsel işlenirken hata oluştu' });
     }
 });
 
-// Upload Multiple Images (For Gallery)
-app.post('/api/upload-multiple', upload.array('images', 10), async (req, res) => {
+// Batch Upload
+app.post('/api/upload-batch', authenticateToken, upload.array('images', 20), async (req, res) => {
     if (!req.files || req.files.length === 0) {
-        return res.status(400).json({ message: 'Dosya seçilmedi' });
+        return res.status(400).json({ error: 'Görsel yüklenemedi' });
     }
 
     try {
         const results = [];
 
         for (const file of req.files) {
-            const timestamp = Date.now() + Math.round(Math.random() * 1000);
-            const originalName = file.originalname.replace(/\.[^/.]+$/, "");
-
-            const originalFilename = `${timestamp}-${originalName}-original${path.extname(file.originalname)}`;
-            const optimizedFilename = `${timestamp}-${originalName}.webp`;
+            const originalFilename = `original_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`;
+            const optimizedFilename = `optimized_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.webp`;
 
             const originalPath = path.join(UPLOADS_DIR, originalFilename);
             const optimizedPath = path.join(UPLOADS_DIR, optimizedFilename);
 
-            // Save Original
-            await fs.promises.writeFile(originalPath, file.buffer);
+            fs.writeFileSync(originalPath, file.buffer);
 
-            // Save Optimized
             await sharp(file.buffer)
-                .resize({ width: 1920, withoutEnlargement: true })
-                .resize({ height: 1080, fit: 'inside', withoutEnlargement: true }) // Fit within 1920x1080
+                .resize({ height: 1080, fit: 'inside', withoutEnlargement: true })
                 .webp({ quality: 80 })
                 .toFile(optimizedPath);
 
@@ -188,79 +360,20 @@ app.post('/api/upload-multiple', upload.array('images', 10), async (req, res) =>
         }
 
         res.json(results);
-
     } catch (error) {
-        console.error('Batch processing error:', error);
-        res.status(500).json({ message: 'Galeri yüklenirken hata oluştu' });
+        console.error('Batch upload error:', error);
+        res.status(500).json({ error: 'Galeri yüklenirken hata oluştu' });
     }
 });
 
-// --- CONTACT FORM ROUTES ---
-
-// Contact Data File
-const CONTACT_FILE = path.join(__dirname, 'data', 'contacts.json');
-
-// Helper: Read Contacts
-const readContacts = () => {
-    if (!fs.existsSync(CONTACT_FILE)) return [];
-    const data = fs.readFileSync(CONTACT_FILE);
-    return JSON.parse(data);
-};
-
-// Helper: Write Contacts
-const writeContacts = (data) => {
-    fs.writeFileSync(CONTACT_FILE, JSON.stringify(data, null, 2));
-};
-
-// Rate limiting map (IP based)
-const rateLimitMap = new Map();
-const RATE_LIMIT_MS = 30000; // 30 saniye
-
-// Submit Contact Form
-app.post('/api/contact', (req, res) => {
-    const { name, phone, message } = req.body;
-    const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
-
-    // Rate limiting check
-    const lastSubmit = rateLimitMap.get(clientIP);
-    if (lastSubmit && Date.now() - lastSubmit < RATE_LIMIT_MS) {
-        const remaining = Math.ceil((RATE_LIMIT_MS - (Date.now() - lastSubmit)) / 1000);
-        return res.status(429).json({ error: `Lütfen ${remaining} saniye bekleyin.` });
-    }
-
-    // Validation
-    if (!name || !phone || !message) {
-        return res.status(400).json({ error: 'Tüm alanlar zorunludur.' });
-    }
-
-    // Save contact
-    const contacts = readContacts();
-    const newContact = {
-        id: Date.now().toString(),
-        name: name.trim(),
-        phone: phone.trim(),
-        message: message.trim(),
-        createdAt: new Date().toISOString(),
-        isRead: false
-    };
-
-    contacts.push(newContact);
-    writeContacts(contacts);
-
-    // Update rate limit
-    rateLimitMap.set(clientIP, Date.now());
-
-    res.json({ success: true, message: 'Mesajınız gönderildi.' });
-});
-
-// Get All Contacts (Admin)
-app.get('/api/contacts', (req, res) => {
+// Get Contacts (Admin)
+app.get('/api/contacts', authenticateToken, (req, res) => {
     const contacts = readContacts();
     res.json(contacts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
 });
 
 // Mark Contact as Read
-app.put('/api/contacts/:id/read', (req, res) => {
+app.put('/api/contacts/:id/read', authenticateToken, (req, res) => {
     const contacts = readContacts();
     const contact = contacts.find(c => c.id === req.params.id);
     if (contact) {
@@ -273,7 +386,7 @@ app.put('/api/contacts/:id/read', (req, res) => {
 });
 
 // Delete Contact
-app.delete('/api/contacts/:id', (req, res) => {
+app.delete('/api/contacts/:id', authenticateToken, (req, res) => {
     let contacts = readContacts();
     const initialLength = contacts.length;
     contacts = contacts.filter(c => c.id !== req.params.id);
@@ -286,7 +399,15 @@ app.delete('/api/contacts/:id', (req, res) => {
     }
 });
 
+// ===== ERROR HANDLING =====
+
+app.use((err, req, res, next) => {
+    console.error('Server Error:', err);
+    res.status(500).json({ error: 'Sunucu hatası oluştu' });
+});
+
 // Start Server
 app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`🔒 Security features: JWT, bcrypt, rate limiting, helmet, input validation`);
 });
