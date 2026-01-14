@@ -215,6 +215,22 @@
     min-height: 100px;
 }
 
+/* Optional hint - (opsiyonel) text */
+.optional-hint {
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    opacity: 0.7;
+}
+
+/* Input hint - alt yazı */
+.input-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+    opacity: 0.8;
+}
+
 /* Submit Button */
 .submit-btn {
     display: flex;

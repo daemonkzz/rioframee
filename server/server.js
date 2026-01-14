@@ -207,7 +207,8 @@ app.get('/api/projects/:id', (req, res) => {
 // Contact Form (Public with rate limit)
 app.post('/api/contact', contactLimiter, [
     body('name').trim().escape().isLength({ min: 2, max: 100 }),
-    body('phone').trim().escape().isLength({ min: 1, max: 10 }),
+    body('phone').optional({ checkFalsy: true }).trim().escape().isLength({ max: 15 }),
+    body('lifeinvader').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
     body('message').trim().escape().isLength({ min: 10, max: 1000 })
 ], (req, res) => {
     const errors = validationResult(req);
@@ -215,13 +216,19 @@ app.post('/api/contact', contactLimiter, [
         return res.status(400).json({ error: 'Lütfen tüm alanları doğru doldurun.' });
     }
 
-    const { name, phone, message } = req.body;
+    const { name, phone, lifeinvader, message } = req.body;
+
+    // Telefon veya LifeinVader'dan en az biri dolu olmalı
+    if (!phone && !lifeinvader) {
+        return res.status(400).json({ error: 'Telefon veya LifeinVader profilinden en az birini doldurun.' });
+    }
 
     const contacts = readContacts();
     const newContact = {
         id: Date.now().toString(),
         name: sanitizeHtml(name),
-        phone: sanitizeHtml(phone),
+        phone: phone ? sanitizeHtml(phone) : '',
+        lifeinvader: lifeinvader ? sanitizeHtml(lifeinvader) : '',
         message: sanitizeHtml(message),
         createdAt: new Date().toISOString(),
         isRead: false

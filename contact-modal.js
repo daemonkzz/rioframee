@@ -78,17 +78,30 @@ document.addEventListener('DOMContentLoaded', function () {
         // Form verilerini al
         const name = document.getElementById('contactName').value.trim();
         const phone = document.getElementById('contactPhone').value.trim();
+        const lifeinvader = document.getElementById('contactLifeinvader')?.value.trim() || '';
         const message = document.getElementById('contactMessage').value.trim();
 
-        // Validasyon
-        if (!name || !phone || !message) {
-            showMessage('Lütfen tüm alanları doldurun.', 'error');
+        // Validasyon - Ad ve Mesaj zorunlu
+        if (!name || !message) {
+            showMessage('Lütfen Ad Soyad ve Mesaj alanlarını doldurun.', 'error');
             return;
         }
 
-        // Telefon: sadece rakam, max 10 karakter
-        if (!/^\d{1,10}$/.test(phone)) {
-            showMessage('Telefon numarası sadece rakam içermeli (max 10).', 'error');
+        // Telefon veya LifeinVader'dan en az biri dolu olmalı
+        if (!phone && !lifeinvader) {
+            showMessage('Telefon veya LifeinVader profilinden en az birini doldurun.', 'error');
+            return;
+        }
+
+        // Telefon girildiyse: sadece rakam, 7-11 karakter
+        if (phone && !/^\d{7,11}$/.test(phone)) {
+            showMessage('Telefon numarası 7-11 haneli rakam olmalı.', 'error');
+            return;
+        }
+
+        // LifeinVader girildiyse: URL formatı kontrolü
+        if (lifeinvader && !lifeinvader.includes('lifeinvader')) {
+            showMessage('Geçerli bir LifeinVader profil linki girin.', 'error');
             return;
         }
 
@@ -102,7 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ name, phone, message })
+                body: JSON.stringify({ name, phone, lifeinvader, message })
             });
 
             const result = await response.json();
