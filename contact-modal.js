@@ -86,10 +86,9 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Telefon numarası validasyonu
-        const phoneRegex = /^[0-9\s\-\+\(\)]{10,20}$/;
-        if (!phoneRegex.test(phone)) {
-            showMessage('Geçerli bir telefon numarası girin.', 'error');
+        // Telefon: sadece rakam, max 10 karakter
+        if (!/^\d{1,10}$/.test(phone)) {
+            showMessage('Telefon numarası sadece rakam içermeli (max 10).', 'error');
             return;
         }
 

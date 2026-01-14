@@ -360,7 +360,7 @@ function updateActiveNavLink() {
 }
 
 /* ============================
-   3D LOGO ANİMASYONU (Three.js)
+   3D LOGO ANİMASYONU (Three.js) - MULTI-LAYER
    ============================ */
 function init3DLogo() {
     const canvas = document.getElementById('logo3d');
@@ -390,135 +390,156 @@ function init3DLogo() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setClearColor(0x000000, 0);
 
-    // Logo texture yükle - CORS için Image objesi kullan
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function () {
-        // Canvas'tan texture oluştur (CORS bypass)
-        const canvas2d = document.createElement('canvas');
-        canvas2d.width = img.width;
-        canvas2d.height = img.height;
-        const ctx = canvas2d.getContext('2d');
-        ctx.drawImage(img, 0, 0);
+    // Logo grubu
+    const logoGroup = new THREE.Group();
+    scene.add(logoGroup);
 
-        const texture = new THREE.CanvasTexture(canvas2d);
-        texture.needsUpdate = true;
+    // PARÇA AYARLARI - Derinlik, Z pozisyonu, Yan renk ve Arka renk
+    const layers = [
+        { name: 'dışbeyaz', depth: 0.30, zOffset: 0, sideColor: 0xf5f5f5, backColor: 0xcccccc },
+        { name: 'tamturuncu', depth: 0.40, zOffset: 0.15, sideColor: 0xB8975A, backColor: 0x5a4a2d },
+        { name: 'dışyuvarlak', depth: 0.60, zOffset: 0.35, sideColor: 0xB8975A, backColor: 0x5a4a2d },
+        { name: 'içyuvarlak', depth: 0.75, zOffset: 0.65, sideColor: 0xf0e6d3, backColor: 0xf5f5f5 },  // Arka beyaz
+        { name: 'ortaturuncu', depth: 0.50, zOffset: 1.05, sideColor: 0xB8975A, backColor: 0x5a4a2d }
+    ];
 
-        // Logo boyutları - %50 DAHA BÜYÜK
-        const aspectRatio = texture.image.width / texture.image.height;
-        const planeWidth = 7.5; // %50 büyütüldü (önceki: 5)
-        const planeHeight = planeWidth / aspectRatio;
-        const depth = 0.15; // İnce 3D derinlik (çizgi sorunu düzeltildi)
+    let loadedCount = 0;
+    const totalLayers = layers.length;
 
-        // 3D EXTRUDE için BoxGeometry kullan
-        const boxGeometry = new THREE.BoxGeometry(planeWidth, planeHeight, depth);
+    // Her layer için mesh oluştur
+    layers.forEach((layer, index) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
 
-        // Ön yüz için texture'lu material
-        const frontMaterial = new THREE.MeshStandardMaterial({
-            map: texture,
-            transparent: true,
-            metalness: 0.4,
-            roughness: 0.3,
-        });
+        img.onload = function () {
+            // Canvas'tan texture oluştur
+            const canvas2d = document.createElement('canvas');
+            canvas2d.width = img.width;
+            canvas2d.height = img.height;
+            const ctx = canvas2d.getContext('2d');
+            ctx.drawImage(img, 0, 0);
 
-        // Yan ve arka yüzler için altın renkli material
-        const sideMaterial = new THREE.MeshStandardMaterial({
-            color: 0xB8975A,
-            metalness: 0.6,
-            roughness: 0.3,
-        });
+            const texture = new THREE.CanvasTexture(canvas2d);
+            texture.needsUpdate = true;
 
-        // Arka yüz için koyu material
-        const backMaterial = new THREE.MeshStandardMaterial({
-            color: 0x5a4a2d,
-            metalness: 0.5,
-            roughness: 0.4,
-        });
+            // Logo boyutları
+            const aspectRatio = texture.image.width / texture.image.height;
+            const planeWidth = 7.5;
+            const planeHeight = planeWidth / aspectRatio;
 
-        // 6 yüz için material array: [sağ, sol, üst, alt, ön, arka]
-        const materials = [
-            sideMaterial,  // sağ
-            sideMaterial,  // sol
-            sideMaterial,  // üst
-            sideMaterial,  // alt
-            frontMaterial, // ön (logo texture)
-            backMaterial   // arka
-        ];
+            // 3D BoxGeometry
+            const boxGeometry = new THREE.BoxGeometry(planeWidth, planeHeight, layer.depth);
 
-        const logoMesh = new THREE.Mesh(boxGeometry, materials);
-        scene.add(logoMesh);
+            // Ön yüz texture'lu
+            const frontMaterial = new THREE.MeshStandardMaterial({
+                map: texture,
+                transparent: true,
+                metalness: 0.4,
+                roughness: 0.3,
+                depthWrite: true,
+            });
 
-        // Işıklandırma
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        scene.add(ambientLight);
+            // Yan yüzler - her layer için özel renk
+            const sideMaterial = new THREE.MeshStandardMaterial({
+                color: layer.sideColor,
+                metalness: 0.6,
+                roughness: 0.3,
+                transparent: true,
+                opacity: 0.95
+            });
 
-        const directionalLight = new THREE.DirectionalLight(0xB8975A, 1.2);
-        directionalLight.position.set(5, 5, 5);
-        scene.add(directionalLight);
+            // Arka yüz - her layer için özel renk
+            const backMaterial = new THREE.MeshStandardMaterial({
+                color: layer.backColor,
+                metalness: 0.5,
+                roughness: 0.4,
+                transparent: true,
+            });
 
-        const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
-        directionalLight2.position.set(-5, -5, 5);
-        scene.add(directionalLight2);
+            const materials = [
+                sideMaterial, sideMaterial, sideMaterial, sideMaterial,
+                frontMaterial, backMaterial
+            ];
 
-        // Arka ışık (derinliği vurgulamak için)
-        const backLight = new THREE.DirectionalLight(0xB8975A, 0.4);
-        backLight.position.set(0, 0, -5);
-        scene.add(backLight);
+            const mesh = new THREE.Mesh(boxGeometry, materials);
+            mesh.position.z = layer.zOffset;
+            mesh.name = layer.name;
+            mesh.renderOrder = index;
+            logoGroup.add(mesh);
 
-        // Point light for subtle glow
-        const pointLight = new THREE.PointLight(0xB8975A, 0.6, 12);
-        pointLight.position.set(0, 0, 4);
-        scene.add(pointLight);
+            loadedCount++;
+            console.log(`Loaded: ${layer.name} (${loadedCount}/${totalLayers})`);
 
-        // Mouse takibi için değişkenler
-        let mouseX = 0;
-        let mouseY = 0;
-        let targetRotationX = 0;
-        let targetRotationY = 0;
+            // Tüm parçalar yüklenince animasyonu başlat
+            if (loadedCount === totalLayers) {
+                startAnimation();
+            }
+        };
 
-        // Mouse hareketi dinle
-        document.addEventListener('mousemove', function (e) {
-            mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-            mouseY = (e.clientY / window.innerHeight) * 2 - 1;
-        });
+        img.onerror = function () {
+            console.error(`Logo parçası yüklenemedi: ${layer.name}`);
+            loadedCount++;
+        };
 
-        // Animasyon döngüsü
+        img.src = `logo/${layer.name}.png`;
+    });
+
+    // Işıklandırma
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    scene.add(ambientLight);
+
+    const directionalLight = new THREE.DirectionalLight(0xB8975A, 1.2);
+    directionalLight.position.set(5, 5, 5);
+    scene.add(directionalLight);
+
+    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.6);
+    directionalLight2.position.set(-5, -5, 5);
+    scene.add(directionalLight2);
+
+    const backLight = new THREE.DirectionalLight(0xB8975A, 0.4);
+    backLight.position.set(0, 0, -5);
+    scene.add(backLight);
+
+    const pointLight = new THREE.PointLight(0xB8975A, 0.6, 12);
+    pointLight.position.set(0, 0, 4);
+    scene.add(pointLight);
+
+    // Mouse takibi
+    let mouseX = 0, mouseY = 0;
+    let targetRotationX = 0, targetRotationY = 0;
+
+    document.addEventListener('mousemove', function (e) {
+        mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+        mouseY = (e.clientY / window.innerHeight) * 2 - 1;
+    });
+
+    // Animasyon başlatıcı
+    function startAnimation() {
         let time = 0;
+
         function animate() {
             requestAnimationFrame(animate);
             time += 0.005;
 
-            // Yavaş otomatik dönüş - 3D derinliği göstermek için daha geniş açı
             targetRotationY = Math.sin(time) * 0.4 + mouseX * 0.3;
             targetRotationX = Math.cos(time * 0.5) * 0.15 + mouseY * 0.15;
 
-            // Smooth interpolation
-            logoMesh.rotation.y += (targetRotationY - logoMesh.rotation.y) * 0.05;
-            logoMesh.rotation.x += (targetRotationX - logoMesh.rotation.x) * 0.05;
+            logoGroup.rotation.y += (targetRotationY - logoGroup.rotation.y) * 0.05;
+            logoGroup.rotation.x += (targetRotationX - logoGroup.rotation.x) * 0.05;
+            logoGroup.position.y = Math.sin(time * 2) * 0.1;
 
-            // Hafif yukarı-aşağı salınım
-            logoMesh.position.y = Math.sin(time * 2) * 0.1;
-
-            // Point light animasyonu
             pointLight.intensity = 0.6 + Math.sin(time * 3) * 0.2;
 
             renderer.render(scene, camera);
         }
 
         animate();
+    }
 
-        // Pencere boyutu değiştiğinde
-        window.addEventListener('resize', function () {
-            camera.aspect = container.clientWidth / container.clientHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
-        });
-    };
-
-    img.onerror = function (error) {
-        console.log('Logo yüklenemedi:', error);
-    };
-
-    // Logo yolunu ayarla
-    img.src = 'rioframelogo.png';
+    // Resize handler
+    window.addEventListener('resize', function () {
+        camera.aspect = container.clientWidth / container.clientHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(container.clientWidth, container.clientHeight);
+    });
 }
