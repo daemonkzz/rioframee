@@ -281,6 +281,15 @@ function initNavbar() {
             navMenu.classList.toggle('active');
             navToggle.classList.toggle('active');
         });
+
+        // X butonuna (pseudo element) tıklama - menüye tıklayınca kapat
+        navMenu.addEventListener('click', function (e) {
+            // Sadece menünün kendisine tıklandığında kapat (linklere değil)
+            if (e.target === navMenu) {
+                navMenu.classList.remove('active');
+                navToggle.classList.remove('active');
+            }
+        });
     }
 
     // Smooth scroll ve menü kapatma
@@ -365,6 +374,15 @@ function updateActiveNavLink() {
 function init3DLogo() {
     const canvas = document.getElementById('logo3d');
     if (!canvas) return;
+
+    // Mobilde 3D logo render etme - performans için
+    if (window.innerWidth <= 768) {
+        canvas.style.backgroundImage = 'url(rioframelogo.png)';
+        canvas.style.backgroundSize = 'contain';
+        canvas.style.backgroundPosition = 'center';
+        canvas.style.backgroundRepeat = 'no-repeat';
+        return;
+    }
 
     const container = canvas.parentElement;
 

@@ -356,6 +356,16 @@ async function initProjectForm() {
             document.getElementById('pClient').value = p.client;
             document.getElementById('pDescription').value = p.description;
 
+            // Proje Hakkında ve Hizmetler
+            if (document.getElementById('pAboutText')) {
+                document.getElementById('pAboutText').value = p.aboutText || '';
+            }
+            if (document.getElementById('pServices')) {
+                // Array'i satırlara çevir
+                const servicesText = Array.isArray(p.services) ? p.services.join('\n') : '';
+                document.getElementById('pServices').value = servicesText;
+            }
+
             if (p.mainImage) {
                 mainImageData = p.mainImage;
                 const url = typeof p.mainImage === 'string' ? p.mainImage : p.mainImage.optimizedUrl;
@@ -423,6 +433,10 @@ async function initProjectForm() {
         const category = document.getElementById('pCategory').value;
         const client = document.getElementById('pClient').value;
         const description = document.getElementById('pDescription').value;
+        const aboutText = document.getElementById('pAboutText')?.value || '';
+        const servicesText = document.getElementById('pServices')?.value || '';
+        // Hizmetleri satırlara böl ve array yap
+        const services = servicesText.split('\n').map(s => s.trim()).filter(s => s);
 
         if (!title || !client || !description) {
             alert('Lütfen tüm alanları doldurun.');
@@ -439,6 +453,8 @@ async function initProjectForm() {
             category,
             client,
             description,
+            aboutText,
+            services,
             mainImage: mainImageData,
             gallery: galleryImages
         };

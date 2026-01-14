@@ -34,6 +34,26 @@
             document.getElementById('projectClient').textContent = project.client;
             document.getElementById('projectCategoryMeta').textContent = project.category;
 
+            // Proje Hakkında
+            const aboutTextEl = document.getElementById('projectAboutText');
+            if (aboutTextEl && project.aboutText) {
+                // Paragrafları ayır ve <p> tag'leri ile sar
+                const paragraphs = project.aboutText.split('\n').filter(p => p.trim());
+                aboutTextEl.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+            } else if (aboutTextEl) {
+                // Fallback: description kullan
+                aboutTextEl.innerHTML = `<p>${project.description}</p>`;
+            }
+
+            // Hizmetler
+            const servicesEl = document.getElementById('projectServices');
+            if (servicesEl && project.services && project.services.length > 0) {
+                servicesEl.innerHTML = project.services.map(s => `<li>${s}</li>`).join('');
+            } else if (servicesEl) {
+                // Varsayılan hizmetler
+                servicesEl.innerHTML = '<li>Profesyonel Tasarım</li>';
+            }
+
             // Main Image Handling
             const mainUrlStr = getUrl(project.mainImage, 'optimized');
             const mainOriginal = getUrl(project.mainImage, 'original');
