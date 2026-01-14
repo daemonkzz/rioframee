@@ -10,6 +10,31 @@
     const API_URL = isLocalDev ? 'http://localhost:3000/api' : '/api';
 
     document.addEventListener('DOMContentLoaded', async function () {
+        // Mobile Navbar Toggle
+        const navToggle = document.querySelector('.nav-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+                navToggle.classList.toggle('active');
+            });
+
+            navMenu.addEventListener('click', (e) => {
+                if (e.target === navMenu) {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                }
+            });
+
+            navMenu.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                });
+            });
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const projectId = urlParams.get('id');
 
