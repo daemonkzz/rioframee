@@ -276,11 +276,11 @@
             <!-- Sağ Taraf - Görsel -->
             <div class="about-visual reveal-right">
                 <!-- Dekoratif Oklar (Görselin Arkasında) -->
-                <img src="logokesiksol.png" alt="" class="about-arrow about-arrow-left">
-                <img src="logokesiksag.png" alt="" class="about-arrow about-arrow-right">
+                <img src="logokesiksol.png" alt="" class="about-arrow about-arrow-left" loading="lazy">
+                <img src="logokesiksag.png" alt="" class="about-arrow about-arrow-right" loading="lazy">
 
                 <div class="about-image-wrapper">
-                    <img src="rioframegörsel1.jpg" alt="RioFrame Hakkında">
+                    <img src="rioframegörsel1.jpg" alt="RioFrame Hakkında" loading="lazy">
                     <div class="about-image-glow"></div>
                 </div>
             </div>
@@ -312,8 +312,16 @@
                         <input type="text" id="contactName" name="name" placeholder="Adınız Soyadınız" required>
                     </div>
                     <div class="form-group">
-                        <label for="contactPhone">Telefon Numarası</label>
-                        <input type="tel" id="contactPhone" name="phone" placeholder="529 68 33" required>
+                        <label for="contactPhone">Telefon Numarası <span
+                                class="optional-hint">(opsiyonel)</span></label>
+                        <input type="tel" id="contactPhone" name="phone" placeholder="529 68 33">
+                    </div>
+                    <div class="form-group">
+                        <label for="contactLifeinvader">LifeinVader Profiliniz <span
+                                class="optional-hint">(opsiyonel)</span></label>
+                        <input type="url" id="contactLifeinvader" name="lifeinvader"
+                            placeholder="https://lifeinvader.vennycommunity.com/kullanici">
+                        <small class="input-hint">Telefon veya LifeinVader profilinden en az birini doldurun.</small>
                     </div>
                     <div class="form-group">
                         <label for="contactMessage">RioFrame'den isteğiniz nedir?</label>

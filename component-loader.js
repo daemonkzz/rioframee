@@ -29,8 +29,9 @@ class ComponentLoader {
             return true;
         }
 
-        // Modal'ı body'e ekle
-        const success = await this.loadHTML('components/contact-modal.html', 'body');
+        // Modal'ı body'e ekle (cache-busting için timestamp ekle)
+        const cacheBuster = `?v=${Date.now()}`;
+        const success = await this.loadHTML(`components/contact-modal.html${cacheBuster}`, 'body');
 
         if (success) {
             // Modal script'ini yeniden başlat

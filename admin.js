@@ -47,37 +47,74 @@ async function loadProjects() {
     const countEl = document.getElementById('totalProjects');
 
     try {
-        const response = await fetch(`${API_URL}/projects`);
+        // Admin endpoint'i kullan - tüm projeler (pasifler dahil)
+        const response = await fetch(`${API_URL}/admin/projects`, {
+            headers: getAuthHeaders()
+        });
+
+        // Token geçersiz veya süresi dolmuşsa login'e yönlendir
+        if (response.status === 401 || response.status === 403) {
+            localStorage.removeItem('adminToken');
+            window.location.href = 'admin-login.html';
+            return;
+        }
+
         const projects = await response.json();
+
+        // API hata döndürdüyse veya array değilse kontrol et
+        if (!Array.isArray(projects)) {
+            throw new Error(projects.error || 'Projeler yüklenemedi');
+        }
 
         tableBody.innerHTML = '';
         if (countEl) countEl.textContent = projects.length;
 
-        projects.forEach((project) => {
-            const row = `
-                <tr>
-                    <td><img src="${getImageUrl(project.mainImage)}" 
-                        style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px; background: #333"></td>
-                    <td>${project.title}</td>
-                    <td><span class="badge">${project.category}</span></td>
-                    <td>${project.client}</td>
-                    <td style="display:flex; gap: 0.5rem">
-                        <a href="admin-project-form.html?id=${project.id}" class="btn-icon" title="Düzenle">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </a>
-                        <button class="btn-icon delete-btn" data-id="${project.id}" title="Sil">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
-                    </td>
-                </tr>
+        projects.forEach((project, index) => {
+            const isActive = project.isActive !== false;
+            const statusBadge = isActive
+                ? '<span class="badge badge-active">Aktif</span>'
+                : '<span class="badge badge-inactive">Pasif</span>';
+            const toggleTitle = isActive ? 'Pasife Al' : 'Aktife Al';
+            const toggleIcon = isActive
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+
+            const row = document.createElement('tr');
+            row.draggable = true;
+            row.dataset.id = project.id;
+            row.className = isActive ? '' : 'inactive-row';
+            row.innerHTML = `
+                <td class="drag-handle" style="cursor:grab;text-align:center">${index + 1}</td>
+                <td><img src="${getImageUrl(project.mainImage)}" 
+                    style="width: 60px; height: 40px; object-fit: cover; border-radius: 4px; background: #333"></td>
+                <td>${project.title}</td>
+                <td><span class="badge">${project.category}</span></td>
+                <td>${statusBadge}</td>
+                <td style="display:flex; gap: 0.5rem">
+                    <button class="btn-icon toggle-btn" data-id="${project.id}" title="${toggleTitle}">
+                        ${toggleIcon}
+                    </button>
+                    <a href="admin-project-form.html?id=${project.id}" class="btn-icon" title="Düzenle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </a>
+                    <button class="btn-icon delete-btn" data-id="${project.id}" title="Sil">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </td>
             `;
-            tableBody.insertAdjacentHTML('beforeend', row);
+            tableBody.appendChild(row);
         });
 
-        // Delete handlers
+        // Event handlers
         document.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', handleDelete);
         });
+        document.querySelectorAll('.toggle-btn').forEach(btn => {
+            btn.addEventListener('click', handleToggleStatus);
+        });
+
+        // Drag-drop sıralama
+        initDragDrop(tableBody);
 
     } catch (error) {
         console.error("Error loading projects:", error);
@@ -98,6 +135,92 @@ async function handleDelete(e) {
     } catch (error) {
         alert('Silme başarısız: ' + error.message);
     }
+}
+
+// Toggle Project Active/Inactive Status
+async function handleToggleStatus(e) {
+    const id = e.currentTarget.dataset.id;
+    try {
+        const res = await fetch(`${API_URL}/projects/${id}/toggle-status`, {
+            method: 'PUT',
+            headers: getAuthHeaders()
+        });
+        if (!res.ok) throw new Error('Durum değiştirme başarısız');
+        loadProjects();
+    } catch (error) {
+        alert('Durum değiştirme başarısız: ' + error.message);
+    }
+}
+
+// Drag-Drop Reorder
+function initDragDrop(tableBody) {
+    let draggedRow = null;
+
+    tableBody.addEventListener('dragstart', (e) => {
+        if (e.target.tagName === 'TR') {
+            draggedRow = e.target;
+            e.target.style.opacity = '0.5';
+        }
+    });
+
+    tableBody.addEventListener('dragend', (e) => {
+        if (e.target.tagName === 'TR') {
+            e.target.style.opacity = '1';
+            draggedRow = null;
+        }
+    });
+
+    tableBody.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const afterElement = getDragAfterElement(tableBody, e.clientY);
+        if (draggedRow && afterElement !== draggedRow) {
+            if (afterElement) {
+                tableBody.insertBefore(draggedRow, afterElement);
+            } else {
+                tableBody.appendChild(draggedRow);
+            }
+        }
+    });
+
+    tableBody.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        // Yeni sırayı kaydet
+        const rows = tableBody.querySelectorAll('tr');
+        const orderedIds = Array.from(rows).map(row => row.dataset.id);
+
+        // Sıra numaralarını güncelle
+        rows.forEach((row, index) => {
+            row.querySelector('.drag-handle').textContent = index + 1;
+        });
+
+        // Server'a gönder
+        try {
+            await fetch(`${API_URL}/projects/reorder`, {
+                method: 'PUT',
+                headers: {
+                    ...getAuthHeaders(),
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ orderedIds })
+            });
+        } catch (error) {
+            console.error('Sıralama kaydetme hatası:', error);
+        }
+    });
+}
+
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('tr:not([style*="opacity: 0.5"])')];
+
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 // --- PROJECT FORM (admin-project-form.html) ---
@@ -246,6 +369,16 @@ async function initProjectForm() {
             document.getElementById('pClient').value = p.client;
             document.getElementById('pDescription').value = p.description;
 
+            // Proje Hakkında ve Hizmetler
+            if (document.getElementById('pAboutText')) {
+                document.getElementById('pAboutText').value = p.aboutText || '';
+            }
+            if (document.getElementById('pServices')) {
+                // Array'i satırlara çevir
+                const servicesText = Array.isArray(p.services) ? p.services.join('\n') : '';
+                document.getElementById('pServices').value = servicesText;
+            }
+
             if (p.mainImage) {
                 mainImageData = p.mainImage;
                 const url = typeof p.mainImage === 'string' ? p.mainImage : p.mainImage.optimizedUrl;
@@ -313,6 +446,10 @@ async function initProjectForm() {
         const category = document.getElementById('pCategory').value;
         const client = document.getElementById('pClient').value;
         const description = document.getElementById('pDescription').value;
+        const aboutText = document.getElementById('pAboutText')?.value || '';
+        const servicesText = document.getElementById('pServices')?.value || '';
+        // Hizmetleri satırlara böl ve array yap
+        const services = servicesText.split('\n').map(s => s.trim()).filter(s => s);
 
         if (!title || !client || !description) {
             alert('Lütfen tüm alanları doldurun.');
@@ -329,6 +466,8 @@ async function initProjectForm() {
             category,
             client,
             description,
+            aboutText,
+            services,
             mainImage: mainImageData,
             gallery: galleryImages
         };
@@ -410,6 +549,9 @@ async function uploadFile(file) {
 
     const res = await fetch(`${API_URL}/upload`, {
         method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+        },
         body: formData
     });
 

@@ -186,10 +186,14 @@ app.get('/api/verify-token', authenticateToken, (req, res) => {
 
 // ===== PUBLIC ROUTES =====
 
-// Get All Projects (Public)
+// Get All Projects (Public - only active, sorted by order)
 app.get('/api/projects', (req, res) => {
     const projects = readData();
-    res.json(projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+    // Sadece aktif projeleri döndür (isActive undefined ise true kabul et)
+    const activeProjects = projects.filter(p => p.isActive !== false);
+    // Order'a göre sırala (order yoksa sona at)
+    activeProjects.sort((a, b) => (a.order || 9999) - (b.order || 9999));
+    res.json(activeProjects);
 });
 
 // Get Single Project (Public)
@@ -203,7 +207,8 @@ app.get('/api/projects/:id', (req, res) => {
 // Contact Form (Public with rate limit)
 app.post('/api/contact', contactLimiter, [
     body('name').trim().escape().isLength({ min: 2, max: 100 }),
-    body('phone').trim().escape().isLength({ min: 7, max: 20 }),
+    body('phone').optional({ checkFalsy: true }).trim().escape().isLength({ max: 15 }),
+    body('lifeinvader').optional({ checkFalsy: true }).trim().isLength({ max: 200 }),
     body('message').trim().escape().isLength({ min: 10, max: 1000 })
 ], (req, res) => {
     const errors = validationResult(req);
@@ -211,13 +216,19 @@ app.post('/api/contact', contactLimiter, [
         return res.status(400).json({ error: 'Lütfen tüm alanları doğru doldurun.' });
     }
 
-    const { name, phone, message } = req.body;
+    const { name, phone, lifeinvader, message } = req.body;
+
+    // Telefon veya LifeinVader'dan en az biri dolu olmalı
+    if (!phone && !lifeinvader) {
+        return res.status(400).json({ error: 'Telefon veya LifeinVader profilinden en az birini doldurun.' });
+    }
 
     const contacts = readContacts();
     const newContact = {
         id: Date.now().toString(),
         name: sanitizeHtml(name),
-        phone: sanitizeHtml(phone),
+        phone: phone ? sanitizeHtml(phone) : '',
+        lifeinvader: lifeinvader ? sanitizeHtml(lifeinvader) : '',
         message: sanitizeHtml(message),
         createdAt: new Date().toISOString(),
         isRead: false
@@ -234,9 +245,13 @@ app.post('/api/contact', contactLimiter, [
 // Create Project
 app.post('/api/projects', authenticateToken, (req, res) => {
     const projects = readData();
+    // En yüksek order değerini bul
+    const maxOrder = projects.reduce((max, p) => Math.max(max, p.order || 0), 0);
     const newProject = {
         id: Date.now().toString(),
         createdAt: new Date().toISOString(),
+        isActive: true,
+        order: maxOrder + 1,
         ...req.body,
         // Sanitize text fields
         title: sanitizeHtml(req.body.title),
@@ -296,6 +311,53 @@ app.delete('/api/projects/:id', authenticateToken, (req, res) => {
     if (project.gallery) project.gallery.forEach(deleteImage);
 
     projects = projects.filter(p => p.id !== req.params.id);
+    writeData(projects);
+    res.json({ success: true });
+});
+
+// Get All Projects for Admin (includes inactive)
+app.get('/api/admin/projects', authenticateToken, (req, res) => {
+    const projects = readData();
+    // Order'a göre sırala
+    projects.sort((a, b) => (a.order || 9999) - (b.order || 9999));
+    res.json(projects);
+});
+
+// Toggle Project Active Status
+app.put('/api/projects/:id/toggle-status', authenticateToken, (req, res) => {
+    let projects = readData();
+    const project = projects.find(p => p.id === req.params.id);
+
+    if (!project) {
+        return res.status(404).json({ error: 'Proje bulunamadı' });
+    }
+
+    // Toggle isActive (undefined ise true kabul et, sonra false yap)
+    project.isActive = project.isActive === false ? true : false;
+    project.updatedAt = new Date().toISOString();
+
+    writeData(projects);
+    res.json({ success: true, isActive: project.isActive });
+});
+
+// Reorder Projects
+app.put('/api/projects/reorder', authenticateToken, (req, res) => {
+    const { orderedIds } = req.body; // Array of project IDs in new order
+
+    if (!orderedIds || !Array.isArray(orderedIds)) {
+        return res.status(400).json({ error: 'Geçersiz sıralama verisi' });
+    }
+
+    let projects = readData();
+
+    // Her proje için yeni order değeri ata
+    orderedIds.forEach((id, index) => {
+        const project = projects.find(p => p.id === id);
+        if (project) {
+            project.order = index + 1;
+        }
+    });
+
     writeData(projects);
     res.json({ success: true });
 });

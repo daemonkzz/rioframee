@@ -10,6 +10,31 @@
     const API_URL = isLocalDev ? 'http://localhost:3000/api' : '/api';
 
     document.addEventListener('DOMContentLoaded', async function () {
+        // Mobile Navbar Toggle
+        const navToggle = document.querySelector('.nav-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+                navToggle.classList.toggle('active');
+            });
+
+            navMenu.addEventListener('click', (e) => {
+                if (e.target === navMenu) {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                }
+            });
+
+            navMenu.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                });
+            });
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const projectId = urlParams.get('id');
 
@@ -33,6 +58,26 @@
             document.getElementById('projectDescription').innerText = project.description; // Preserve newlines
             document.getElementById('projectClient').textContent = project.client;
             document.getElementById('projectCategoryMeta').textContent = project.category;
+
+            // Proje Hakkında
+            const aboutTextEl = document.getElementById('projectAboutText');
+            if (aboutTextEl && project.aboutText) {
+                // Paragrafları ayır ve <p> tag'leri ile sar
+                const paragraphs = project.aboutText.split('\n').filter(p => p.trim());
+                aboutTextEl.innerHTML = paragraphs.map(p => `<p>${p}</p>`).join('');
+            } else if (aboutTextEl) {
+                // Fallback: description kullan
+                aboutTextEl.innerHTML = `<p>${project.description}</p>`;
+            }
+
+            // Hizmetler
+            const servicesEl = document.getElementById('projectServices');
+            if (servicesEl && project.services && project.services.length > 0) {
+                servicesEl.innerHTML = project.services.map(s => `<li>${s}</li>`).join('');
+            } else if (servicesEl) {
+                // Varsayılan hizmetler
+                servicesEl.innerHTML = '<li>Profesyonel Tasarım</li>';
+            }
 
             // Main Image Handling
             const mainUrlStr = getUrl(project.mainImage, 'optimized');

@@ -10,6 +10,33 @@
     const API_URL = isLocalDev ? 'http://localhost:3000/api' : '/api';
 
     document.addEventListener('DOMContentLoaded', async () => {
+        // Mobile Navbar Toggle
+        const navToggle = document.querySelector('.nav-toggle');
+        const navMenu = document.querySelector('.nav-menu');
+
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+                navToggle.classList.toggle('active');
+            });
+
+            // Menüye tıklayınca kapat
+            navMenu.addEventListener('click', (e) => {
+                if (e.target === navMenu) {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                }
+            });
+
+            // Link tıklayınca kapat
+            navMenu.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    navMenu.classList.remove('active');
+                    navToggle.classList.remove('active');
+                });
+            });
+        }
+
         const projectsGrid = document.getElementById('projectsGrid') || document.querySelector('.projects-grid');
         const filterButtons = document.querySelectorAll('.filter-btn');
         let allProjects = [];
