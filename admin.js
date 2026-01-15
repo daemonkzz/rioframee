@@ -327,14 +327,13 @@ async function initProjectForm() {
 
         for (let i = 0; i < files.length; i++) {
             try {
+                const token = localStorage.getItem('adminToken');
                 const formData = new FormData();
                 formData.append('images', files[i]);
+                formData.append('token', token);
 
                 const response = await fetch(`${API_URL}/upload-batch`, {
                     method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
-                    },
                     body: formData
                 });
 
@@ -548,17 +547,14 @@ function setupUploadZone(zone, input, callback) {
 }
 
 async function uploadFile(file) {
+    const token = localStorage.getItem('adminToken');
+
     const formData = new FormData();
     formData.append('image', file);
-
-    const token = localStorage.getItem('adminToken');
-    console.log('[Client] Uploading with token:', token ? token.substring(0, 10) + '...' : 'NULL');
+    formData.append('token', token); // Token'ı body'de gönder
 
     const res = await fetch(`${API_URL}/upload`, {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`
-        },
         body: formData
     });
 
