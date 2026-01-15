@@ -140,9 +140,9 @@ const loginLimiter = rateLimit({
 
 // Contact form rate limiting
 const contactLimiter = rateLimit({
-    windowMs: 30 * 1000, // 30 saniye
+    windowMs: 3 * 1000, // 3 saniye
     max: 1,
-    message: { error: 'Lütfen 30 saniye bekleyin.' }
+    message: { error: 'Lütfen 3 saniye bekleyin.' }
 });
 
 // ===== ROUTES =====
