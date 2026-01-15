@@ -19,6 +19,9 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+// Proxy configuration (Required for rate limiting behind Nginx/Load Balancer)
+app.set('trust proxy', 1);
+
 // Security: CORS - Kısıtlı origin'ler
 const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'];
 app.use(cors({
@@ -110,6 +113,7 @@ const sanitizeHtml = (str) => {
 
 // JWT Token doğrulama middleware
 const authenticateToken = (req, res, next) => {
+    console.log('[Auth Debug] All Headers:', JSON.stringify(req.headers, null, 2)); // FULL DEBUG
     const authHeader = req.headers['authorization'];
     console.log('[Auth] Header received:', authHeader); // DEBUG LOG
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
