@@ -51,6 +51,7 @@ async function loadProjects() {
         const response = await fetch(`${API_URL}/admin/projects`, {
             headers: getAuthHeaders()
         });
+<<<<<<< HEAD
 
         // Token geçersiz veya süresi dolmuşsa login'e yönlendir
         if (response.status === 401 || response.status === 403) {
@@ -59,6 +60,8 @@ async function loadProjects() {
             return;
         }
 
+=======
+>>>>>>> 00a133b88f0a44f1b0098f89f534f17614530450
         const projects = await response.json();
 
         // API hata döndürdüyse veya array değilse kontrol et
