@@ -51,7 +51,6 @@ async function loadProjects() {
         const response = await fetch(`${API_URL}/admin/projects`, {
             headers: getAuthHeaders()
         });
-<<<<<<< HEAD
 
         // Token geçersiz veya süresi dolmuşsa login'e yönlendir
         if (response.status === 401 || response.status === 403) {
@@ -59,9 +58,6 @@ async function loadProjects() {
             window.location.href = 'admin-login.html';
             return;
         }
-
-=======
->>>>>>> 00a133b88f0a44f1b0098f89f534f17614530450
         const projects = await response.json();
 
         // API hata döndürdüyse veya array değilse kontrol et
@@ -342,6 +338,11 @@ async function initProjectForm() {
                     body: formData
                 });
 
+                if (response.status === 401) {
+                    localStorage.removeItem('adminToken');
+                    window.location.href = 'admin-login.html';
+                    return;
+                }
                 if (!response.ok) throw new Error('Yükleme hatası');
                 const results = await response.json();
 
@@ -557,6 +558,12 @@ async function uploadFile(file) {
         },
         body: formData
     });
+
+    if (res.status === 401) {
+        localStorage.removeItem('adminToken');
+        window.location.href = 'admin-login.html';
+        throw new Error('Oturum süresi doldu, lütfen tekrar giriş yapın.');
+    }
 
     if (!res.ok) throw new Error('Upload failed');
     return await res.json(); // Returns { optimizedUrl, originalUrl }
