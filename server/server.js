@@ -111,6 +111,7 @@ const sanitizeHtml = (str) => {
 // JWT Token doğrulama middleware
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
+    console.log('[Auth] Header received:', authHeader); // DEBUG LOG
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
     if (!token) {

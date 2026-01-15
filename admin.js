@@ -551,10 +551,13 @@ async function uploadFile(file) {
     const formData = new FormData();
     formData.append('image', file);
 
+    const token = localStorage.getItem('adminToken');
+    console.log('[Client] Uploading with token:', token ? token.substring(0, 10) + '...' : 'NULL');
+
     const res = await fetch(`${API_URL}/upload`, {
         method: 'POST',
         headers: {
-            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+            'Authorization': `Bearer ${token}`
         },
         body: formData
     });
